@@ -1,0 +1,53 @@
+name: Godot validation
+on:
+  push:
+    branches: [main, 'phase2/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: godot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        godot: ['4.4.1', '4.7.2']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official Godot build
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ matrix.godot }}'
+          NAME="Godot_v${VERSION}-stable_linux.x86_64.zip"
+          BASE="https://github.com/godotengine/godot-builds/releases/download/${VERSION}-stable"
+          mkdir -p "$RUNNER_TEMP/godot" ci-artifacts
+          cd "$RUNNER_TEMP/godot"
+          curl --fail --location --retry 2 "$BASE/$NAME" -o "$NAME"
+          curl --fail --location --retry 2 "$BASE/SHA512-SUMS.txt" -o sums.txt
+          grep -F "$NAME" sums.txt | sha512sum --check --strict
+          unzip -q "$NAME"
+          chmod +x "Godot_v${VERSION}-stable_linux.x86_64"
+          echo "GODOT_BIN=$RUNNER_TEMP/godot/Godot_v${VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Validate source package
+        run: python3 tools/verify_project.py
+      - name: Import, unit tests and scene smoke test
+        shell: bash
+        run: |
+          set -o pipefail
+          bash tools/test.sh 2>&1 | tee ci-artifacts/godot-tests.log
+      - name: Save validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-${{ matrix.godot }}-validation
+          path: |
+            ci-artifacts/
+            docs/offline_check_report.json
+          if-no-files-found: ignore
+          retention-days: 7
