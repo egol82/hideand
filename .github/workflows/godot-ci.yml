@@ -1,0 +1,111 @@
+name: Godot validation
+on:
+  push:
+    branches: [main, 'phase2/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: godot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        godot: ['4.4.1', '4.7.2']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official Godot build
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ matrix.godot }}'
+          NAME="Godot_v${VERSION}-stable_linux.x86_64.zip"
+          BASE="https://github.com/godotengine/godot-builds/releases/download/${VERSION}-stable"
+          mkdir -p "$RUNNER_TEMP/godot" ci-artifacts
+          cd "$RUNNER_TEMP/godot"
+          curl --fail --location --retry 2 "$BASE/$NAME" -o "$NAME"
+          curl --fail --location --retry 2 "$BASE/SHA512-SUMS.txt" -o sums.txt
+          grep -F "$NAME" sums.txt | sha512sum --check --strict
+          unzip -q "$NAME"
+          chmod +x "Godot_v${VERSION}-stable_linux.x86_64"
+          echo "GODOT_BIN=$RUNNER_TEMP/godot/Godot_v${VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Validate source package
+        run: python3 tools/verify_project.py
+      - name: Import, unit tests, input tests, scene checks and full bot match
+        shell: bash
+        run: |
+          set -o pipefail
+          bash tools/test.sh 2>&1 | tee ci-artifacts/godot-tests.log
+      - name: Capture real rendered game screens
+        if: matrix.godot == '4.7.2'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 90s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility -- --capture-phase2 --seed=8027 2>&1 | tee ci-artifacts/render.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|(^|[[:space:]])ERROR:|FAIL:' ci-artifacts/render.log; then
+            echo 'Engine error found in rendered capture.' >&2
+            exit 1
+          fi
+          grep -Fq PHASE2_SMOKE_READY ci-artifacts/render.log
+          for screen in 01_drawing 02_seeking 03_reveal 04_duel 05_result; do
+            test -s "ci-artifacts/$screen.png"
+          done
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase2_Source.zip HEAD
+      - name: Save validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-${{ matrix.godot }}-validation
+          path: |
+            ci-artifacts/
+            docs/offline_check_report.json
+          if-no-files-found: ignore
+          retention-days: 7
+  windows:
+    name: Windows headless validation (4.7.2)
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-verified official Windows Godot
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = 'https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable'
+          $name = 'Godot_v4.7.2-stable_win64.exe.zip'
+          $folder = Join-Path $env:RUNNER_TEMP 'godot'
+          New-Item -ItemType Directory -Force $folder | Out-Null
+          $archive = Join-Path $folder $name
+          $sumPath = Join-Path $folder 'SHA512-SUMS.txt'
+          Invoke-WebRequest "$base/$name" -OutFile $archive
+          Invoke-WebRequest "$base/SHA512-SUMS.txt" -OutFile $sumPath
+          $line = @(Get-Content -LiteralPath $sumPath | Where-Object { $_ -match ([regex]::Escape($name) + '\s*$') })
+          if ($line.Count -ne 1) { throw 'Missing unique checksum entry' }
+          $expected = ($line[0].Trim() -split '\s+')[0]
+          if ((Get-FileHash $archive -Algorithm SHA512).Hash -ne $expected) { throw 'Checksum mismatch' }
+          Expand-Archive $archive -DestinationPath $folder
+          $exe = Get-ChildItem $folder -Recurse -Filter '*_console.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Console executable missing' }
+          "GODOT_BIN=$($exe.FullName)" >> $env:GITHUB_ENV
+      - name: Run engine tests on Windows
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ci-artifacts | Out-Null
+          python tools/verify_project.py
+          & ./tools/test.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/windows-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Save Windows evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-windows-4.7.2-validation
+          path: ci-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

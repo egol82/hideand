@@ -1,42 +1,22 @@
-# Phase 1 완료 조건 — 실제 엔진 검증용
+# Acceptance — Phase 2
 
-현재 모든 아래 항목은 미확인이다. 체크는 실제 수행 후에만 한다.
+CI completion and human approval are different. See TEST_STATUS.md for evidence from actual runs.
 
-## 엔진
-- [ ] 엔진 버전과 OS를 기록했다.
-- [ ] 에디터 임포트와 GDScript 파싱이 오류 없이 끝난다.
-- [ ] `test_weapon.gd`의 검증이 통과한다.
-- [ ] `--smoke-test`가 메인 씬 초기화 후 정상 종료한다.
-- [ ] GUI에서 콘솔 오류 없이 시작하고 반복 실행할 수 있다.
+## Automated coverage
 
-## 그림 → 무기
-- [ ] 빈 그림을 장착할 수 없다.
-- [ ] 예시 3종 외의 직접 그린 형태도 실제 3D 메시로 나타난다.
-- [ ] 원본 선의 상대 형태가 보존된다.
-- [ ] 그린 무기를 회전했을 때 두께와 광원 반응이 있다.
-- [ ] 손잡이 위치를 옮기면 손에 붙는 지점이 함께 바뀐다.
-- [ ] 첫 획/되돌리기/전체 삭제/잉크 소진/점 한도에 문제가 없다.
-- [ ] 종횡비가 극단적인 선, 서로 교차하는 선, 반복해서 겹친 선에도 멈추지 않는다.
-- [ ] 저장/불러오기 후 그림과 색이 유지된다.
-- [ ] 잘못된 JSON, 좌표 범위 초과, 파일 크기/점/획 한도 초과를 거부한다.
+Original bounded weapon data/mesh regression tests; Phase 2 state transitions, scoring, timers, capture, escape and tie KO; simple fill/fallback and random custom contour meshes; all six navigation routes; scripted mouse drawing, equipped shape, E hide/inspect, pause, restart and timeout; actual phase scene initialization; a full four-round bot match; rendered captures at 1280×720.
 
-## 조작·전투
-- [ ] WASD와 마우스 조준 방향이 카메라 시점에서 자연스럽다.
-- [ ] 공격 판정이 그린 선을 따라 움직인다.
-- [ ] 빠른 공격이 상대를 지나가면서 누락되는지 검사했다.
-- [ ] 한 번의 공격으로 같은 상대는 한 번만 맞는다.
-- [ ] 벽·소파·상자 너머로 공격이 관통하지 않는다.
-- [ ] 두 번의 일반 피격에서 넉백이 보이고, 세 번째 피격 후 재생성된다.
-- [ ] 반복 피격/벽 접촉/대시 중에 바닥 아래로 빠지거나 방 밖으로 나가지 않는다.
-- [ ] 그림판을 열면 연습 진행이 멈추고, 닫으면 정상 복귀한다.
-- [ ] R 초기화가 그림 무기를 지우지 않는다.
-- [ ] 상자 근처 숨기/나오기는 수동 데모로 표시하며 완성된 숨바꼭질로 설명하지 않는다.
+## Human checks still required
 
-## 시각·성능
-- [ ] 캐릭터/무기/소품 재질과 빛이 통일돼 있다.
-- [ ] UI가 1280×720에서 잘리지 않는다.
-- [ ] 실제 테스트 PC의 CPU/GPU, 해상도, 평균/최저 프레임 상황을 기록했다.
-- [ ] F2 디버그를 끈 상태에서 성능을 확인했다.
-- [ ] 실제 게임 화면 3장 이상을 저장하고 콘셉트 이미지와 분리했다.
+- [ ] Play four rounds as both starting roles without using debug flags.
+- [ ] Inspect/hide at all six props and try corner cases around walls and other players.
+- [ ] Draw long, tiny, disconnected, crossed and dense shapes; verify the visible/contact shape and grip.
+- [ ] Judge five-second duel timing, recovery, escape grace, cooldown and the payoff of discovery.
+- [ ] Save/load all eight slots, overwrite a slot, restart the app and simulate permission/write failures.
+- [ ] Verify input at 720p/1080p, window resize, DPI, fullscreen and focus loss while drawing/dueling.
+- [ ] Hear effects on an actual audio device; CI capture deliberately uses a dummy driver.
+- [ ] Test graphics and performance on the intended Windows GPU/CPU. Headless Windows is not GPU validation.
+- [ ] Validate an exported Windows executable and required distribution notices before release.
+- [ ] Compare screenshots and motion against the chosen art direction; do not claim concept-level fidelity yet.
 
-프레임률/제작시간을 테스트 없이 보장하지 않는다. 온라인 멀티, Steam 로비, 완성형 3D 복원은 이번 완료 조건에 포함하지 않는다.
+Online, Steam lobbies, controller navigation, Korean UI and shipping assets are separate future acceptance scopes.
