@@ -8,6 +8,9 @@ fi
 check_run() {
   local expected="$1" log status=0
   shift
+  if [[ " $* " == *" --script "* ]]; then
+    set -- --fixed-fps 60 --quit-after 1800 "$@"
+  fi
   log="$(mktemp)"
   "$GODOT" "$@" >"$log" 2>&1 || status=$?
   cat "$log"

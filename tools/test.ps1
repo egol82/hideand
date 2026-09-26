@@ -7,6 +7,7 @@ if (-not $Godot) {
 }
 if (-not $Godot -or -not (Test-Path $Godot)) { throw 'Set GODOT_BIN or pass -Godot C:\Tools\Godot.exe' }
 function Invoke-Checked([string[]]$Arguments, [string]$Expected = "") {
+    if ($Arguments -contains '--script') { $Arguments = @('--fixed-fps','60','--quit-after','1800') + $Arguments }
     $output = & $Godot @Arguments 2>&1
     $exitCode = $LASTEXITCODE
     $text = $output -join "`n"
