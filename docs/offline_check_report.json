@@ -1,0 +1,9 @@
+{
+  "validator": "offline-package-checks",
+  "checks": 43,
+  "failures": [],
+  "godot_parse_test": "NOT RUN",
+  "godot_runtime_test": "NOT RUN",
+  "visual_playtest": "NOT RUN",
+  "note": "Delimiter/resource/independent-math checks do not prove GDScript compiles or gameplay works."
+}
