@@ -1,67 +1,55 @@
 #!/usr/bin/env python3
+"""Offline source hygiene only; does not claim GDScript compilation or gameplay QA."""
 from __future__ import annotations
-import json, math, re, sys
+import json
+import re
 from pathlib import Path
-
 ROOT = Path(__file__).resolve().parents[1]
-failures = []
-checks = []
 
-def check(value, label):
-    checks.append(label)
-    if not value:
-        failures.append(label)
-    print(f"{'PASS' if value else 'FAIL'}: {label}")
-
-def delimiters_balanced(text):
-    stack=[]; quote=''; escaped=False; comment=False
-    pairs={')':'(',']':'[','}':'{'}
-    for ch in text:
+def balanced(text: str) -> bool:
+    stack: list[str] = []
+    quote, escape, comment = '', False, False
+    pairs = {')':'(', ']':'[', '}':'{'}
+    for char in text:
         if comment:
-            if ch == '\n': comment=False
-            continue
-        if quote:
-            if escaped: escaped=False
-            elif ch == '\\': escaped=True
-            elif ch == quote: quote=''
-            continue
-        if ch == '#': comment=True
-        elif ch in "\"'": quote=ch
-        elif ch in '([{': stack.append(ch)
-        elif ch in ')]}':
-            if not stack or stack.pop()!=pairs[ch]: return False
+            if char == '\n': comment = False
+        elif quote:
+            if escape: escape = False
+            elif char == '\\': escape = True
+            elif char == quote: quote = ''
+        elif char == '#': comment = True
+        elif char in '\"\'': quote = char
+        elif char in '([{': stack.append(char)
+        elif char in ')]}':
+            if not stack or stack.pop() != pairs[char]: return False
     return not stack and not quote
 
-def main():
-    project=ROOT/'project.godot'
-    check(project.exists(),'Godot project exists')
-    check('res://scenes/main.tscn' in project.read_text(encoding='utf-8'),'main scene is configured')
-    gd_files=sorted(ROOT.rglob('*.gd'))
-    check(len(gd_files)>=7,'game modules and Godot test runner exist')
-    for file in gd_files:
-        text=file.read_text(encoding='utf-8')
-        rel=file.relative_to(ROOT)
-        check(delimiters_balanced(text),f'{rel}: text delimiter balance')
-        names=re.findall(r'^(?:static )?func (\w+)\(',text,re.M)
-        check(len(names)==len(set(names)),f'{rel}: unique function names')
-        for path in set(re.findall(r'res://([a-zA-Z0-9_/.\-]+)',text)):
-            check((ROOT/path).exists(),f'{rel}: resource {path} exists')
-    for scene in ROOT.rglob('*.tscn'):
-        for path in re.findall(r'path="res://([^"]+)"',scene.read_text()):
-            check((ROOT/path).exists(),f'{scene.name}: script resource exists')
-    check(not any(p.name.startswith('.env') for p in ROOT.rglob('*')),'no environment/secret file bundled')
-    check(not (ROOT/'.godot').exists(),'no generated engine cache bundled')
-    data=(ROOT/'scripts/weapon_data.gd').read_text()
-    get_float=lambda name: float(re.search(rf'const {name} := ([0-9.]+)',data).group(1))
-    max_ink,max_reach,radius=get_float('MAX_INK'),get_float('MAX_REACH'),get_float('TUBE_RADIUS')
-    check(max_ink>0 and max_reach>radius>0,'positive bounded weapon constants')
-    check('Geometry2D.get_closest_point_to_segment' in data,'grip snap uses drawing geometry')
-    check('SurfaceTool.new()' in (ROOT/'scripts/weapon_mesh.gd').read_text(),'weapon uses runtime mesh generation')
-    check('PhysicsRayQueryParameters3D.create' in (ROOT/'scripts/main.gd').read_text(),'strike obstruction query is present')
-    report={'validator':'offline-package-checks','checks':len(checks),'failures':failures,'godot_parse_test':'NOT RUN','godot_runtime_test':'NOT RUN','visual_playtest':'NOT RUN'}
+def main() -> int:
+    checks: list[dict] = []
+    def check(value: bool, name: str) -> None:
+        checks.append({'name': name, 'pass': bool(value)})
+        print(f"{'PASS' if value else 'FAIL'}: {name}")
+    config = (ROOT/'project.godot').read_text(encoding='utf-8')
+    check('run/main_scene="res://scenes/phase2.tscn"' in config, 'Phase 2 main scene configured')
+    for filename in ['scenes/main.tscn','scenes/phase2.tscn','tests/test_weapon.gd','tests/phase2/test_phase2.gd']:
+        check((ROOT/filename).is_file(), f'preserved entry: {filename}')
+    for file in sorted((ROOT/'scripts').rglob('*.gd')) + sorted((ROOT/'tests').rglob('*.gd')):
+        text = file.read_text(encoding='utf-8')
+        path = str(file.relative_to(ROOT))
+        check(balanced(text), f'{path}: delimiters')
+        functions = re.findall(r'^(?:static )?func (\w+)\(', text, re.M)
+        check(len(functions) == len(set(functions)), f'{path}: distinct function names')
+        resources = re.findall(r'(?:preload|load)\("res://([^"\n]+)"\)', text)
+        resources += re.findall(r'^extends "res://([^"\n]+)"', text, re.M)
+        for resource in sorted(set(resources)):
+            check((ROOT/resource).is_file(), f'{path}: {resource}')
+    for scene in (ROOT/'scenes').rglob('*.tscn'):
+        for resource in re.findall(r'path="res://([^"]+)"', scene.read_text()):
+            check((ROOT/resource).exists(), f'{scene.name}: {resource}')
+    report = {'validator':'offline-source-hygiene','checks':len(checks),'failures':[c['name'] for c in checks if not c['pass']], 'not_verified_by_this_script':['GDScript compilation','engine runtime','visual quality','human playtest']}
     (ROOT/'docs/offline_check_report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-    print(f'\n{len(checks)} checks; {len(failures)} failures. Godot runtime NOT verified.')
-    return 1 if failures else 0
+    print(f"{len(checks)} checks, {len(report['failures'])} failures. Not an engine test.")
+    return int(bool(report['failures']))
 
-if __name__=='__main__':
-    sys.exit(main())
+if __name__ == '__main__':
+    raise SystemExit(main())

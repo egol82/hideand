@@ -5,25 +5,23 @@ if (-not $Godot) {
     $candidate = Get-Command godot -ErrorAction SilentlyContinue
     if ($candidate) { $Godot = $candidate.Source }
 }
-if (-not $Godot -or -not (Test-Path $Godot)) {
-    throw 'Set GODOT_BIN to the full path of the standard Godot executable, or use -Godot C:\Tools\Godot.exe'
-}
-function Invoke-GodotChecked([string[]]$Arguments, [string]$Expected = "") {
+if (-not $Godot -or -not (Test-Path $Godot)) { throw 'Set GODOT_BIN or pass -Godot C:\Tools\Godot.exe' }
+function Invoke-Checked([string[]]$Arguments, [string]$Expected = "") {
     $output = & $Godot @Arguments 2>&1
-    $exit = $LASTEXITCODE
+    $exitCode = $LASTEXITCODE
+    $text = $output -join "`n"
     $output | ForEach-Object { Write-Host $_ }
-    if ($exit -ne 0 -or ($output -join "`n") -match '(SCRIPT ERROR:|Parse Error:|^ERROR:)') {
-        throw "Godot validation failed: exit $exit"
-    }
-    if ($Expected -and ($output -join "`n") -notmatch [regex]::Escape($Expected)) {
-        throw "Godot exited without the required completion marker: $Expected"
-    }
+    if ($exitCode -ne 0 -or $text -match '(SCRIPT ERROR:|Parse Error:|(^|\s)ERROR:|FAIL:)') { throw "Godot failed ($exitCode)" }
+    if ($Expected -and -not $text.Contains($Expected)) { throw "Missing marker: $Expected" }
 }
 Push-Location $Project
 try {
     & $Godot --version
-    Invoke-GodotChecked -Arguments @('--headless','--path',$Project,'--editor','--import')
-    Invoke-GodotChecked -Arguments @('--headless','--path',$Project,'--script','res://tests/test_weapon.gd')
-    Invoke-GodotChecked -Arguments @('--headless','--fixed-fps','60','--quit-after','240','--path',$Project,'--','--smoke-test') -Expected 'PHASE1_SMOKE_READY'
-    Write-Host 'Godot checks passed. A GUI playtest is still required.'
+    Invoke-Checked @('--headless','--path',$Project,'--editor','--import')
+    Invoke-Checked @('--headless','--path',$Project,'--script','res://tests/test_weapon.gd') 'PHASE1_UNIT_RESULT:'
+    Invoke-Checked @('--headless','--path',$Project,'--script','res://tests/phase2/test_phase2.gd') 'PHASE2_UNIT_RESULT:'
+    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','360','--path',$Project,'res://scenes/main.tscn','--','--smoke-test') 'PHASE1_SMOKE_READY'
+    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','600','--path',$Project,'--','--phase2-smoke','--seed=8027') 'PHASE2_SMOKE_READY'
+    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','45000','--path',$Project,'--','--autoplay-test') 'PHASE2_AUTOPLAY_RESULT:'
+    Write-Host 'Engine checks passed. Human playtesting and Windows export validation remain separate.'
 } finally { Pop-Location }

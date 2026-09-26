@@ -36,11 +36,24 @@ jobs:
           echo "GODOT_BIN=$RUNNER_TEMP/godot/Godot_v${VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
       - name: Validate source package
         run: python3 tools/verify_project.py
-      - name: Import, unit tests and scene smoke test
+      - name: Import, unit tests, scene checks and full bot match
         shell: bash
         run: |
           set -o pipefail
           bash tools/test.sh 2>&1 | tee ci-artifacts/godot-tests.log
+      - name: Capture real rendered game screens
+        if: matrix.godot == '4.7.2'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 90s xvfb-run -a "$GODOT_BIN" --path . --rendering-method gl_compatibility -- --capture-phase2 --seed=8027 2>&1 | tee ci-artifacts/render.log
+          ! grep -Eq 'SCRIPT ERROR:|Parse Error:|(^|[[:space:]])ERROR:|FAIL:' ci-artifacts/render.log
+          grep -Fq PHASE2_SMOKE_READY ci-artifacts/render.log
+          for screen in 01_drawing 02_seeking 03_reveal 04_duel 05_result; do
+            test -s "ci-artifacts/$screen.png"
+          done
       - name: Save validation evidence
         if: always()
         uses: actions/upload-artifact@v4
