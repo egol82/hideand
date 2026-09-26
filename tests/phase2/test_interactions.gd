@@ -54,7 +54,9 @@ func run() -> void:
 	var time: float = game.rules.time_left
 	game.toggle_pause()
 	check(game.paused,"pause menu pauses simulation")
+	game.automated = false
 	game._physics_process(1.0)
+	game.automated = true
 	check(game.rules.time_left == time,"pause does not consume phase time")
 	game.toggle_pause()
 	check(not game.paused,"resume restores simulation")
@@ -85,8 +87,9 @@ func run() -> void:
 	check(not game.fighters[1].hidden_in_box,"found hider becomes a visible duelist")
 	game.rules.tick(Rules.REVEAL_SECONDS+0.01)
 	check(game.rules.phase == Rules.Phase.DUEL,"real scene enters duel")
+	var seeker_attack: Array[int] = [0]
 	for hit in range(3):
-		game.rules.register_hits([0])
+		game.rules.register_hits(seeker_attack)
 	check(not game.rules.alive[1] and not game.fighters[1].visible,"capture removes player for rest of round")
 	check(game.rules.phase == Rules.Phase.SEEK,"capture resumes search without a new round")
 	game.return_to_menu()
