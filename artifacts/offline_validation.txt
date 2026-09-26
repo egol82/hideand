@@ -1,3 +1,4 @@
-Offline package validation: 43 checks, 0 failures.
-Resource references, delimiter balance, data budgets, runtime mesh usage, grip geometry, and strike obstruction query were checked.
-Godot parse/runtime/visual playtest: NOT RUN.
+Historical Phase 1 offline-only report has been superseded.
+Current offline source hygiene: 92 checks, 0 failures locally.
+Actual Godot engine evidence is recorded in docs/TEST_STATUS.md and GitHub Actions logs/artifacts.
+Do not treat this text file as an engine run or a human playtest.

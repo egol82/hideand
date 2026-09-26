@@ -1,33 +1,23 @@
-# Art Bible · Phase 1
+# Art Bible — shared toy world
 
-## 핵심
+Player drawings must look native to the world, not like flat black stickers pasted onto a rendered room.
 
-**그림을 다른 세계에서 가져온 스티커처럼 붙이지 않는다. 모든 요소를 같은 무광 장난감 세계로 만든다.**
+## Shared rules
 
-이전 생성 이미지의 캐릭터 색감, 편안한 방, 놀이 분위기는 참고한다. 그러나 검은 낙서 무기만 평면처럼 떠 있는 표현은 사용자의 이질감 금지 요구를 만족시키지 못하므로 그대로 답습하지 않는다.
+- Avatars: rounded shapes, tiny limbs, simple expressive face, mint/pink/yellow/blue.
+- Weapons: original stroke paths, rounded tubes and optional shallow filled simple loops. Five common colors. No realistic metal or photographic texture.
+- Materials: roughness 0.8, metallic 0, metallic_specular 0.25. The same material vocabulary is used by characters, props and weapons.
+- Lighting: warm key light, restrained cool fill and low ambient energy. Validate in the actual Compatibility renderer; avoid clipped white walls, rug and toy faces.
+- Room: small readable diorama, clear hiding locations, plain wood/cardboard/plant colors. Keep the fighting rug unobstructed.
+- UI: cream panels, dark ink, mint confirmation buttons. Explicit colors for checked/hovered states, not just normal state. Minimal readable match HUD.
+- Feedback: generated short effects, squash, small particles, optional shake. Reduced motion disables shake and preview rotation.
 
-## 제작 규칙
+## Geometry promises
 
-| 대상 | Phase 1 규칙 |
-|---|---|
-| 캐릭터 | 단순한 둥근 덩어리, 작은 손발, 두 눈과 입, 민트/분홍/노랑 |
-| 무기 | 사용자가 그린 선을 둥근 튜브로 만든다. 색상은 공통 팔레트 |
-| 소품 | 단순한 목재색·종이색·식물색. 실제 사진 텍스처 없음 |
-| 재질 | roughness 0.8, metallic 0, specular 0.25를 공통 기준으로 사용 |
-| 광원 | 따뜻한 주광과 약한 보조광. 무기도 같은 광원에 반응 |
-| 카메라 | 기울어진 고정 3D 시점. 실제 이동·판정은 3D 좌표 |
-| UI | 크림색 패널, 둥근 버튼, 적은 텍스트, 충분한 플레이 영역 |
-| 효과 | 작은 별/파편 같은 기하학적 표현. 고어 없음 |
+Stroke positions and relative shape are preserved. Grip translation, common tube thickness and maximum reach normalization are expected transformations. Filling only applies to validated simple closed loops; complex shapes remain tubes. Hollow and solid modes must both match their hit samples.
 
-## 원본 그림 보존의 뜻
-선의 경로와 상대적인 모양을 유지한다. 플레이 가능성을 위한 최대 크기 조정, 일정한 선 굵기와 손잡이 기준 이동은 적용한다.
+## Verify visually
 
-## 금지
-- 무기만 검은 종이 그림, 캐릭터만 사실적인 고급 3D인 혼합.
-- 실사 목재·천의 디테일에 비해 무기만 극단적으로 단순한 재질.
-- 미리 만들어 둔 무기로 임의의 사용자 그림을 교체.
-- 콘셉트 이미지 전체를 배경으로 띄워 실제 게임 구현처럼 보이게 하기.
-- 화면 대부분을 차지하는 홍보 로고/문구.
+Use CI's actual 01_drawing, 02_seeking, 03_reveal, 04_duel and 05_result captures or F12 screenshots from the game. Check clipping, label size, button contrast, body/weapon contact and camera framing. Captures from a scripted scenario do not replace testing animated motion and input during normal play.
 
-## 실제 시각 검증
-같은 카메라에서 캐릭터와 무기를 보고, 무기를 회전시켜 두께와 광원 반응을 확인한다. 캐릭터 손과 손잡이가 붙어 있는지 확인한다. 그림판의 색/형태와 실제 장착 결과를 나란히 캡처한다. 이 검증은 현재 아직 미수행이다.
+This is currently a procedural prototype. The earlier high-detail generated living-room illustrations remain a direction reference, not the current rendered quality or an implemented asset pack.

@@ -24,6 +24,7 @@ check_run() {
 check_run '' --headless --path "$ROOT" --editor --import
 check_run 'PHASE1_UNIT_RESULT:' --headless --path "$ROOT" --script res://tests/test_weapon.gd
 check_run 'PHASE2_UNIT_RESULT:' --headless --path "$ROOT" --script res://tests/phase2/test_phase2.gd
+check_run 'PHASE2_INTERACTION_RESULT:' --headless --path "$ROOT" --script res://tests/phase2/test_interactions.gd
 check_run 'PHASE1_SMOKE_READY' --headless --fixed-fps 60 --quit-after 360 --path "$ROOT" res://scenes/main.tscn -- --smoke-test
 check_run 'PHASE2_SMOKE_READY' --headless --fixed-fps 60 --quit-after 600 --path "$ROOT" -- --phase2-smoke --seed=8027
 check_run 'PHASE2_AUTOPLAY_RESULT:' --headless --fixed-fps 60 --quit-after 45000 --path "$ROOT" -- --autoplay-test

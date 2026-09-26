@@ -36,7 +36,7 @@ jobs:
           echo "GODOT_BIN=$RUNNER_TEMP/godot/Godot_v${VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
       - name: Validate source package
         run: python3 tools/verify_project.py
-      - name: Import, unit tests, scene checks and full bot match
+      - name: Import, unit tests, input tests, scene checks and full bot match
         shell: bash
         run: |
           set -o pipefail
@@ -57,6 +57,7 @@ jobs:
           for screen in 01_drawing 02_seeking 03_reveal 04_duel 05_result; do
             test -s "ci-artifacts/$screen.png"
           done
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase2_Source.zip HEAD
       - name: Save validation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,11 +83,12 @@ jobs:
           $folder = Join-Path $env:RUNNER_TEMP 'godot'
           New-Item -ItemType Directory -Force $folder | Out-Null
           $archive = Join-Path $folder $name
+          $sumPath = Join-Path $folder 'SHA512-SUMS.txt'
           Invoke-WebRequest "$base/$name" -OutFile $archive
-          $sums = (Invoke-WebRequest "$base/SHA512-SUMS.txt").Content
-          $line = ($sums -split "`n" | Where-Object { $_ -match ([regex]::Escape($name) + '\s*$') })
-          if (@($line).Count -ne 1) { throw 'Missing unique checksum entry' }
-          $expected = ($line.Trim() -split '\s+')[0]
+          Invoke-WebRequest "$base/SHA512-SUMS.txt" -OutFile $sumPath
+          $line = @(Get-Content -LiteralPath $sumPath | Where-Object { $_ -match ([regex]::Escape($name) + '\s*$') })
+          if ($line.Count -ne 1) { throw 'Missing unique checksum entry' }
+          $expected = ($line[0].Trim() -split '\s+')[0]
           if ((Get-FileHash $archive -Algorithm SHA512).Hash -ne $expected) { throw 'Checksum mismatch' }
           Expand-Archive $archive -DestinationPath $folder
           $exe = Get-ChildItem $folder -Recurse -Filter '*_console.exe' | Select-Object -First 1

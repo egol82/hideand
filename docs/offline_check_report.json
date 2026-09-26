@@ -1,9 +1,7 @@
 {
-  "validator": "offline-package-checks",
-  "checks": 43,
+  "validator": "offline-source-hygiene",
+  "checks": 92,
   "failures": [],
-  "godot_parse_test": "NOT RUN",
-  "godot_runtime_test": "NOT RUN",
-  "visual_playtest": "NOT RUN",
-  "note": "Delimiter/resource/independent-math checks do not prove GDScript compiles or gameplay works."
+  "not_verified_by_this_script": ["GDScript compilation", "engine runtime", "visual quality", "human playtest"],
+  "note": "Local static check result for the Phase 2 package. The CI-generated report records each checked commit separately."
 }
