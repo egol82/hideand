@@ -1,0 +1,3 @@
+Offline package validation: 43 checks, 0 failures.
+Resource references, delimiter balance, data budgets, runtime mesh usage, grip geometry, and strike obstruction query were checked.
+Godot parse/runtime/visual playtest: NOT RUN.
