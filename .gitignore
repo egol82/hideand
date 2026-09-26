@@ -1,0 +1,12 @@
+.godot/
+*.tmp
+*.log
+*.bak
+.DS_Store
+builds/
+.env
+.env.*
+!.env.example
+__pycache__/
+artifacts/*.png
+artifacts/*.log
