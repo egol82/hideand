@@ -14,8 +14,10 @@ func _ready() -> void:
 	nameplate.text = ["YOU", "MARSH", "BOBA", "NOODLE"][player_id]
 	nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	nameplate.position.y = 2.0
-	nameplate.pixel_size = 0.005
+	nameplate.pixel_size = 0.01
 	nameplate.font_size = 32
+	nameplate.outline_size = 6
+	nameplate.modulate = Color("edf8ec")
 	add_child(nameplate)
 
 func equip(data) -> void:

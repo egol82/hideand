@@ -90,13 +90,13 @@ func _setup_world() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55,-35,0)
 	sun.light_color = Color("ffe3b6")
-	sun.light_energy = 1.15
+	sun.light_energy = 0.58
 	sun.shadow_enabled = true
 	add_child(sun)
 	var fill := OmniLight3D.new()
 	fill.position = Vector3(4,4,3)
 	fill.omni_range = 15
-	fill.light_energy = 0.35
+	fill.light_energy = 0.12
 	fill.light_color = Color("b8d8e6")
 	add_child(fill)
 	camera = Camera3D.new()
@@ -113,8 +113,8 @@ func make_environment() -> Environment:
 	env.background_color = Color("283f46")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("e8eedc")
-	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.ambient_light_energy = 0.23
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	return env
 
 func start_match(seek_first: bool = true) -> void:
@@ -550,6 +550,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_C:
 				_taunt()
 			KEY_SHIFT:
+				if rules.phase == Rules.Phase.HIDE and rules.seeker == 0:
+					return
 				if rules.phase in [Rules.Phase.HIDE,Rules.Phase.SEEK,Rules.Phase.DUEL]:
 					if rules.phase != Rules.Phase.DUEL or 0 in [rules.seeker,rules.opponent]:
 						fighters[0].begin_dash(_move_input())

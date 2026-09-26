@@ -59,7 +59,10 @@ func _ready() -> void:
 	var backing := StyleBoxFlat.new()
 	backing.bg_color = Color(0.1,0.17,0.2,0.94)
 	objective.add_theme_stylebox_override("normal",backing)
-	toast = label("",32,Color("fff0b4"))
+	toast = label("",27,Color("fff0b4"))
+	toast.add_theme_color_override("font_shadow_color",Color(0.06,0.13,0.16,0.9))
+	toast.add_theme_constant_override("shadow_offset_x",2)
+	toast.add_theme_constant_override("shadow_offset_y",2)
 	root.add_child(toast)
 	toast.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	toast.offset_top = 106
@@ -160,7 +163,7 @@ func show_pause() -> void:
 func _settings(box: VBoxContainer) -> void:
 	var motion := CheckBox.new()
 	motion.text = "Reduced motion (no camera shake / preview rotation)"
-	motion.add_theme_color_override("font_color",INK)
+	_control_ink(motion)
 	motion.button_pressed = game.preferences.reduced_motion
 	motion.toggled.connect(game.set_reduced_motion)
 	box.add_child(motion)
@@ -205,7 +208,7 @@ func show_drawing(data) -> void:
 	_make_preview(right)
 	var fill := CheckBox.new()
 	fill.text = "Fill simple closed loops"
-	fill.add_theme_color_override("font_color",INK)
+	_control_ink(fill)
 	fill.button_pressed = data.fill_closed
 	fill.toggled.connect(func(value: bool):
 		canvas.data.fill_closed = value
@@ -222,7 +225,7 @@ func show_drawing(data) -> void:
 	var saves := HBoxContainer.new()
 	right.add_child(saves)
 	slot = OptionButton.new()
-	slot.add_theme_color_override("font_color",INK)
+	_control_ink(slot)
 	for i in range(Library.SLOTS):
 		slot.add_item("Slot %d" % (i+1),i)
 	saves.add_child(slot)
@@ -253,6 +256,7 @@ func _make_preview(box: VBoxContainer) -> void:
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-55,-35,0)
 	light.light_color = Color("ffe3b6")
+	light.light_energy = 0.58
 	stage.add_child(light)
 	preview_actor = Toy.avatar(Color("88d6b0"))
 	stage.add_child(preview_actor)
@@ -335,3 +339,7 @@ func button(text: String, action: Callable) -> Button:
 	item.add_theme_stylebox_override("pressed",panel(Color("a9cdb8"),9))
 	item.pressed.connect(action)
 	return item
+
+func _control_ink(control: Control) -> void:
+	for key in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		control.add_theme_color_override(key, INK)
