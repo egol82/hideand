@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/graphics/prop.gd" id="1_prop"]
+
+[node name="LoungeDressing" type="Node3D"]
+metadata/cosmetic_only = true
+
+[node name="WestWindow" type="Node3D" parent="."]
+position = Vector3(-7, 2.7, -9.57)
+script = ExtResource("1_prop")
+kind = "window"
+accent = Color(0.56, 0.72, 0.70, 1)
+
+[node name="CentreWindow" type="Node3D" parent="."]
+position = Vector3(0, 2.7, -9.57)
+script = ExtResource("1_prop")
+kind = "window"
+accent = Color(0.74, 0.67, 0.62, 1)
+
+[node name="EastWindow" type="Node3D" parent="."]
+position = Vector3(7, 2.7, -9.57)
+script = ExtResource("1_prop")
+kind = "window"
+accent = Color(0.56, 0.72, 0.70, 1)
+
+[node name="WestPostcard" type="Node3D" parent="."]
+position = Vector3(-3.5, 2.3, -9.64)
+script = ExtResource("1_prop")
+kind = "postcard"
+
+[node name="EastPostcard" type="Node3D" parent="."]
+position = Vector3(3.5, 2.3, -9.64)
+script = ExtResource("1_prop")
+kind = "postcard"
+accent = Color(0.71, 0.61, 0.57, 1)
+
+[node name="WestLamp" type="Node3D" parent="."]
+position = Vector3(-5, 0.79, -4.1)
+script = ExtResource("1_prop")
+kind = "lamp"
+
+[node name="EastLamp" type="Node3D" parent="."]
+position = Vector3(5, 0.79, -4.1)
+script = ExtResource("1_prop")
+kind = "lamp"
+
+[node name="CushionSideBooks" type="Node3D" parent="."]
+position = Vector3(1.64, 0.73, -2.59)
+rotation = Vector3(0, -0.18, 0)
+script = ExtResource("1_prop")
+kind = "books"
