@@ -1,18 +1,41 @@
-# Phase 4 — validation status
+# Phase 4 — verified engine evidence
 
-2026-09-27. Local real engine: official Godot 4.4.1.stable.official.49a5bc7b6 on Linux. The engine archive was verified against its SHA512 manifest. Remote CI status must be read on the exact published commit, not assumed from this local result.
+Verified 2026-09-27. Game/test source commit: `129d9888d7137b68fdcd47bddf25c36cf3b0de21`.
 
-## Executed locally
+CI: https://github.com/egol82/hideand/actions/runs/36295220240
 
-- `python tools/verify_project.py`: static source hygiene/resource checks; not an engine substitute.
-- `bash tools/test.sh` and `bash tools/test_phase3.sh`: preserved 52 + 115 + 27 + 259 = 453 assertions and earlier smoke/autoplay regressions passed.
-- `python tools/test_phase4.py`: 237 new assertions, zero failures; default scene import/smoke; six four-round physics/bot runs, all completed.
-- `xvfb-run ... scenes/phase4.tscn -- --capture-phase4`: six 1280x720 real engine screens, correct current stage completion markers. These are reproducible staged scenes, not a manual playthrough.
-- `godot --headless --path . --script res://tools/export_toy_room.gd`: editable room snapshot saved successfully in `user://`.
+This update changes only the verification document. Future game/test source changes require their own evidence.
 
-690 assertions total, not 690 independently designed player scenarios. Exact logs, engine version and source snapshot are required as evidence for future changes.
+## Executed environments
 
-## Fixed-seed regression metrics (not balance claims)
+| Environment | Actual result |
+|---|---|
+| Local Linux / official Godot 4.4.1.stable.official.49a5bc7b6 | Import, preserved regressions, new tests, six matches and actual rendering passed |
+| GitHub Linux / Godot 4.4.1 | All engine tests and six Phase 4 matches passed |
+| GitHub Linux / Godot 4.7.2 | All engine tests, six matches, six new rendered captures and preserved captures passed |
+| GitHub Windows headless / Godot 4.7.2 | All engine tests and six Phase 4 matches passed |
+
+Official engine archives were verified against official SHA512 manifests. The exact GitHub source archive was downloaded and compared byte-for-byte against all 30 intended local changed files: zero mismatches. Existing Phase 1/2/3 source and LICENSE were preserved.
+
+## Assertions and completion markers
+
+```text
+PHASE1_UNIT_RESULT: 52 checks, 0 failures
+PHASE2_UNIT_RESULT: 115 checks, 0 failures
+PHASE2_INTERACTION_RESULT: 27 checks, 0 failures
+PHASE3_UNIT_RESULT: 259 checks, 0 failures
+PHASE4_UNIT_RESULT: 237 checks, 0 failures
+PHASE4_SMOKE_READY
+PHASE4_SUITE_PASS
+```
+
+690 individual assertions total, not 690 independently designed player scenarios. A separate static hygiene pass checked 233 conditions; these are not engine assertions. Test exit codes, error logs and required completion markers are checked together.
+
+New checks include all four audit defects, fixed-pitch repetition at 30/60/120 step rates, buffer expiry/consumption for three attack styles, shared attack timeline, feedback attribution, comfort-independent timers, actual swept contact, duplicate-hit rejection during an active swing, hole/area/reach limits, active/full-map paths and hideout capsule clearance, field encounter continuity, revision-based view caching, and opt-in bounded local diagnostics.
+
+The editable room snapshot helper also successfully saved a scene locally under user://. It is not a baked-lighting or UV2 authoring tool.
+
+## Fixed-seed physics/bot regressions — not balance benchmarks
 
 | Mode | Map | Rounds | Duels | Hits | Captures | Escapes |
 |---|---|---:|---:|---:|---:|---:|
@@ -23,10 +46,16 @@
 | classic | warehouse | 4 | 42 | 220 | 8 | 34 |
 | classic | garden | 4 | 38 | 198 | 7 | 31 |
 
-Autoplay keeps physics, AI, combat and timers. It skips invisible rendering in headless mode. Compact/full navigation and hiding-capsule clearance are covered separately; the six autoplay runs use default compact zones.
+Local and remote Linux/Windows runs recorded the above outcomes. Autoplay keeps physics, AI, combat and timers; it skips invisible presentation in headless mode. The six matches use default compact zones; full/compact navigation and hiding clearance are separately covered.
 
-## Honest boundaries
+## Artifacts
 
-Screens use Mesa software OpenGL / Dummy audio; not an FPS benchmark, Windows GPU run or real audio-device test. Legacy Phase 2 cleanup warnings remain and software OpenGL warns about unavailable V-Sync controls. Earlier scenes retain their historical design and bugs; the Phase 4 tests verify the new default implementation.
+The CI artifact `godot-4.7.2-validation` includes authentic 1280x720 Phase 4 menu/drawing/lounge/reveal/swing/settings captures, execution logs, source commit marker and the exact `git archive` source ZIP. Windows logs are in `godot-windows-4.7.2-validation`. GitHub artifact retention is seven days.
 
-Human mouse feel, accessibility experience, fun, arbitrary drawing edge cases, frame pacing on actual target PCs, multiplayer latency, release export and commercial art quality remain unverified. Windows/Linux CI is configured to repeat engine tests but is not marked passed here until its run is retrieved.
+These are staged reproducible Godot scenes, not generated concept art or a manual playthrough. Rendered captures use Mesa software OpenGL and Dummy audio. They do not measure hardware FPS or verify a Windows graphics/audio device.
+
+## Boundaries and unfinished work
+
+No human mouse-feel, fun/balance or accessibility session was performed. No real four-PC multiplayer, Steam integration, release EXE, Windows GPU performance, professional audio audition, baked indirect lighting/UV2, full hand/body IK, commercial art quality or exhaustive arbitrary-drawing collision proof is claimed. Field escape is timeout or seeker KO, not a new distance-based escape condition. Captured players still spectate the seeker; next-round drawing/assist activities are deferred.
+
+Legacy Phase 2 cleanup warnings and software renderer V-Sync warnings remain. Preserved historical scenes keep their older behavior; fixes apply to the new default Phase 4 game. The whole suite must not be described as warning-free.
