@@ -1,7 +1,11 @@
 {
   "validator": "offline-source-hygiene",
-  "checks": 92,
+  "checks": 140,
   "failures": [],
-  "not_verified_by_this_script": ["GDScript compilation", "engine runtime", "visual quality", "human playtest"],
-  "note": "Local static check result for the Phase 2 package. The CI-generated report records each checked commit separately."
+  "not_verified_by_this_script": [
+    "GDScript compilation",
+    "engine runtime",
+    "visual quality",
+    "human playtest"
+  ]
 }

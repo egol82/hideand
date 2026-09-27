@@ -12,3 +12,6 @@ artifacts/*.png
 artifacts/*.log
 ci-artifacts/*
 !ci-artifacts/.gdignore
+
+# This prototype uses path-based script references.
+*.gd.uid

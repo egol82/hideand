@@ -23,7 +23,7 @@ try {
     Invoke-Checked @('--headless','--path',$Project,'--script','res://tests/phase2/test_phase2.gd') 'PHASE2_UNIT_RESULT:'
     Invoke-Checked @('--headless','--path',$Project,'--script','res://tests/phase2/test_interactions.gd') 'PHASE2_INTERACTION_RESULT:'
     Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','360','--path',$Project,'res://scenes/main.tscn','--','--smoke-test') 'PHASE1_SMOKE_READY'
-    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','600','--path',$Project,'--','--phase2-smoke','--seed=8027') 'PHASE2_SMOKE_READY'
-    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','45000','--path',$Project,'--','--autoplay-test') 'PHASE2_AUTOPLAY_RESULT:'
+    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','600','--path',$Project,'res://scenes/phase2.tscn','--','--phase2-smoke','--seed=8027') 'PHASE2_SMOKE_READY'
+    Invoke-Checked @('--headless','--fixed-fps','60','--quit-after','45000','--path',$Project,'res://scenes/phase2.tscn','--','--autoplay-test') 'PHASE2_AUTOPLAY_RESULT:'
     Write-Host 'Engine checks passed. Human playtesting and Windows export validation remain separate.'
 } finally { Pop-Location }
