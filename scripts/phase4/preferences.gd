@@ -1,5 +1,6 @@
 extends RefCounted
 ## One bounded generation file instead of rewriting three nested ConfigFiles per slider tick.
+const MapCatalog = preload("res://scripts/maps/catalog.gd")
 const Store = preload("res://scripts/quality/safe_store.gd")
 const PATH5 := "user://phase5/settings.json"
 const BOOLS := ["reduced_motion","invert_y","compact","sound_cues","recording"]
@@ -26,7 +27,7 @@ static func validate(data: Dictionary) -> bool:
 	if data.size() != keys.size(): return false
 	for key in data:
 		if key not in keys: return false
-	if data.get("version") != 1 or data.get("mode") not in ["field","classic"] or data.get("map_id") not in ["toy_home","warehouse","garden"] or data.get("language") not in ["en","ko"]: return false
+	if data.get("version") != 1 or data.get("mode") not in ["field","classic"] or data.get("map_id") not in MapCatalog.IDS or data.get("language") not in ["en","ko"]: return false
 	for key in BOOLS:
 		if not data.get(key) is bool: return false
 	for key in RANGES:

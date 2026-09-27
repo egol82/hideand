@@ -1,5 +1,6 @@
 extends "res://scripts/phase3/game.gd"
 ## Phase 4 composes independently verified authority, view, audio and rules modules.
+const MapCatalog = preload("res://scripts/maps/catalog.gd")
 const Rules4 = preload("res://scripts/phase4/match_rules.gd")
 const Fighter4 = preload("res://scripts/phase4/fighter.gd")
 const Arena4 = preload("res://scripts/phase4/arena.gd")
@@ -51,7 +52,7 @@ func _ready() -> void:
 	rng.seed = 8027
 	map_id = preferences.map_id
 	for arg in args:
-		if arg.begins_with("--map="): map_id = str(Catalog3.spec(arg.trim_prefix("--map=")).id)
+		if arg.begins_with("--map="): map_id = str(MapCatalog.spec(arg.trim_prefix("--map=")).id)
 		if arg.begins_with("--mode=") and arg.trim_prefix("--mode=") in Rules4.MODES: rules.mode = arg.trim_prefix("--mode=")
 		if arg == "--full-map": preferences.compact = false
 	if not synthetic_run: rng.randomize()
@@ -62,7 +63,7 @@ func _ready() -> void:
 	arena.compact = preferences.compact
 	add_child(arena)
 	rules.configure(arena.config)
-	if preferences.compact and map_id != "toy_home": rules.seeking_seconds = minf(rules.seeking_seconds,115)
+	if preferences.compact and map_id in ["warehouse","garden"]: rules.seeking_seconds = minf(rules.seeking_seconds,115)
 	for i in range(4):
 		var actor = Fighter4.new()
 		actor.player_id = i
@@ -127,7 +128,7 @@ func make_environment() -> Environment:
 	return e
 
 func select_map(id: String) -> void:
-	if rules.phase != Rules.Phase.MENU or id not in Catalog3.IDS: return
+	if rules.phase != Rules.Phase.MENU or id not in MapCatalog.IDS: return
 	map_id = id
 	preferences.map_id = id
 	_save_preferences()
@@ -138,7 +139,7 @@ func select_map(id: String) -> void:
 	arena.compact = preferences.compact
 	add_child(arena)
 	rules.configure(arena.config)
-	if preferences.compact and id != "toy_home": rules.seeking_seconds = minf(rules.seeking_seconds,115)
+	if preferences.compact and id in ["warehouse","garden"]: rules.seeking_seconds = minf(rules.seeking_seconds,115)
 	for i in range(fighters.size()):
 		fighters[i].original_spawn = arena.spawn_points[i]
 		fighters[i].reset_fight(arena.spawn_points[i])
@@ -468,9 +469,10 @@ func _update_actor_events(id: int) -> void:
 	if foot_distance[id] >= 1.55:
 		foot_distance[id] = 0
 		var quiet: bool = id == 0 and controls.held("quiet") and not autoplay
-		audio.play_at("step",a.position,0.3 if quiet else 0.7)
+		var terrain: Dictionary = arena.surface_profile(a.position)
+		audio.play_at(terrain.sound,a.position,(0.3 if quiet else 0.7)*minf(terrain.noise,1.25))
 		# A seeker can pursue a noise that actually occurred, not a hidden model's position.
-		if id != rules.seeker and fighters[rules.seeker].position.distance_to(a.position) < (3 if quiet else 8):
+		if id != rules.seeker and fighters[rules.seeker].position.distance_to(a.position) < footstep_radius(a.position,quiet):
 			heard_point = Vector3(snappedf(a.position.x,2),0,snappedf(a.position.z,2))
 			heard_time = 1.6
 			if rules.seeker == 0 and preferences.sound_cues:
@@ -483,7 +485,7 @@ func _can_hide_now() -> bool:
 func _focused_spot() -> int:
 	if not _can_hide_now() or not rules.alive[0] or fighters[0].hidden_in_box: return -1
 	var eye: Vector3 = fighters[0].position+Vector3.UP*Rig4.EYE_HEIGHT
-	var centers: Array[Vector2] = Catalog3.prop_centers(map_id)
+	var centers: Array[Vector2] = MapCatalog.prop_centers(map_id)
 	var result := -1
 	var best := 0.42
 	for i in arena.active_spots:
@@ -857,3 +859,7 @@ func _clear_feedback() -> void:
 	if is_instance_valid(effects): effects.reset()
 	if is_instance_valid(audio):
 		for voice in audio.voices: voice.stop()
+
+func footstep_radius(at: Vector3, quiet: bool) -> float:
+	# Public surface affects both teams identically. Sound/comfort sliders never enter this rule.
+	return (3.0 if quiet else 8.0)*float(arena.surface_profile(at).noise)

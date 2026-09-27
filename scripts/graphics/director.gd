@@ -34,7 +34,11 @@ func refresh_arena() -> void:
 	if not active or not is_instance_valid(game.arena): return
 	if game.arena.get_instance_id() == last_arena: return
 	last_arena = game.arena.get_instance_id()
-	Dressing.apply(game.arena)
+	if game.arena.has_meta("map_pack"):
+		_apply_map_lighting(game.arena.map_id)
+	else:
+		_apply_map_lighting("")
+		Dressing.apply(game.arena)
 
 func refresh_ui() -> void:
 	if not active or not is_instance_valid(game.ui): return
@@ -82,3 +86,29 @@ func shade_node(node: Node) -> void:
 			node.material_override = material
 			node.set_meta("view_shaded",true)
 	for child in node.get_children(): shade_node(child)
+
+func _apply_map_lighting(id: String) -> void:
+	# Keep readable exposure in the arcade, not a pitch-black competitive advantage.
+	var e: Environment = game.environment_node.environment
+	e.ambient_light_color = Color("e1e7e0")
+	e.ambient_light_energy = 0.30
+	var sky_mat := e.sky.sky_material as ProceduralSkyMaterial
+	sky_mat.sky_energy_multiplier = 0.42
+	sky_mat.sun_angle_max = 30.0
+	sky_mat.sky_top_color = Color("86b5ca")
+	sky_mat.sky_horizon_color = Color("dfe9dc")
+	if id=="starlight_arcade":
+		e.ambient_light_color = Color("c7d9e2")
+		e.ambient_light_energy = 0.34
+	elif id=="sugar_market":
+		e.ambient_light_color = Color("eee1d0")
+	elif id=="pocket_station":
+		e.ambient_light_color = Color("d6e4db")
+		sky_mat.sky_energy_multiplier = 0.92
+		sky_mat.sun_angle_max = 0.0
+		sky_mat.sky_top_color = Color("8bc4da")
+		sky_mat.sky_horizon_color = Color("e0eddc")
+	game.environment_node.environment = e
+	if game.has_node("WarmKey"):
+		game.get_node("WarmKey").light_energy = 0.33 if id=="starlight_arcade" else 0.41
+		game.get_node("WarmKey").light_color = Color("dedcec") if id=="starlight_arcade" else Color("ffe3bd")
