@@ -1,11 +1,18 @@
 @tool
 extends "res://scripts/phase3/arena.gd"
 const Art4 = preload("res://scripts/phase4/art.gd")
+const NewMaps = preload("res://scripts/maps/builder.gd")
+const MapCatalog = preload("res://scripts/maps/catalog.gd")
+var map_plan: Dictionary = {}
+var surface_zones: Array = []
 var compact := true
 var active_rect := Rect2(-12,-10,24,20)
 var active_spots: Array[int] = []
 
 func _ready() -> void:
+	if MapCatalog.is_new(map_id):
+		NewMaps.build(self)
+		return
 	super._ready()
 	active_rect = Rect2(-dimensions*0.5,dimensions)
 	if compact and map_id == "garden": active_rect = Rect2(-27,-18,54,36)
@@ -99,3 +106,9 @@ func inside(at: Vector3) -> bool:
 
 func is_active(id: int) -> bool:
 	return id in active_spots
+
+func surface_profile(at: Vector3) -> Dictionary:
+	for zone in surface_zones:
+		if zone.rect.has_point(Vector2(at.x,at.z)):
+			return {"noise":zone.noise,"sound":zone.sound,"id":zone.id}
+	return {"noise":1.0,"sound":"step","id":"default"}

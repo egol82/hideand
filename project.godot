@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 6 graphics polish; historical entries remain available.
+; Hide & Smashing — Phase 7 original map pack; historical entries remain available.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase6.tscn"
+run/main_scene="res://scenes/phase7.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 6: toy-world graphics."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 7: three original toy-world maps."
 
 [display]
 window/size/viewport_width=1280

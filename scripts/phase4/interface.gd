@@ -4,8 +4,8 @@ const Form4 = preload("res://scripts/phase4/weapon_form.gd")
 const Canvas4 = preload("res://scripts/phase4/drawing_canvas.gd")
 const Library4 = preload("res://scripts/phase4/weapon_library.gd")
 const Attack4 = preload("res://scripts/phase4/attack_spec.gd")
-const Catalog4 = preload("res://scripts/phase3/map_catalog.gd")
-const Board4 = preload("res://scripts/phase3/map_board.gd")
+const Catalog4 = preload("res://scripts/maps/catalog.gd")
+const Board4 = preload("res://scripts/maps/board.gd")
 const Overlay4 = preload("res://scripts/phase4/overlay.gd")
 const Copy = preload("res://scripts/quality/copy.gd")
 var role_label: Label
@@ -25,7 +25,7 @@ func s(key: String) -> String:
 	return Copy.get_text(key,game.preferences.language)
 
 func map_name(id: String) -> String:
-	return Copy.MAPS.get(id,[id,id])[1 if game.preferences.language == "ko" else 0]
+	return Catalog4.name_for(id,game.preferences.language == "ko")
 
 func _ready() -> void:
 	root = Control.new()
@@ -118,6 +118,19 @@ func show_menu() -> void:
 	choose.select(Catalog4.IDS.find(game.map_id))
 	choose.item_selected.connect(func(i: int): game.select_map(Catalog4.IDS[i]); show_menu())
 	box.add_child(choose)
+	if Catalog4.is_new(game.map_id):
+		var row_map := HBoxContainer.new()
+		row_map.add_theme_constant_override("separation",14)
+		box.add_child(row_map)
+		var preview_map = preload("res://scripts/maps/preview.gd").new()
+		preview_map.map_id = game.map_id
+		preview_map.custom_minimum_size = Vector2(138,84)
+		row_map.add_child(preview_map)
+		var info := Catalog4.spec(game.map_id)
+		var text := label(info.tip_ko if game.preferences.language=="ko" else info.tip_en,15)
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.custom_minimum_size = Vector2(530,82)
+		row_map.add_child(text)
 	var mode := OptionButton.new()
 	_control_ink(mode)
 	mode.add_item(s("field")); mode.add_item(s("classic"))
@@ -357,6 +370,8 @@ func show_map() -> void:
 	board.player_position = game.fighters[0].position
 	board.custom_minimum_size = Vector2(660,350)
 	box.add_child(board)
+	if Catalog4.is_new(game.map_id):
+		box.add_child(label("황금 줄무늬: 소리 타일 · 민트/파란 러그: 조용한 길" if game.preferences.language == "ko" else "Gold stripes: noisy tiles · mint/blue runners: quiet routes",14))
 	box.add_child(button(s("resume"),game.toggle_pause))
 
 func _slider(box: VBoxContainer, title: String, value: float, lo: float, hi: float, step_size: float, action: Callable) -> void:
