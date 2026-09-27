@@ -1,7 +1,7 @@
 name: Godot validation
 on:
   push:
-    branches: [main, 'phase2/**', 'phase3/**']
+    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -46,6 +46,21 @@ jobs:
         run: |
           set -o pipefail
           bash tools/test_phase3.sh 2>&1 | tee ci-artifacts/phase3-tests.log
+      - name: Phase 4 audit regressions and both modes on all maps
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/test_phase4.py 2>&1 | tee ci-artifacts/phase4-suite.log
+      - name: Capture Phase 4 real game screens
+        if: matrix.godot == '4.7.2'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 120s xvfb-run -a python3 tools/test_phase4.py --skip-matches --capture 2>&1 | tee ci-artifacts/phase4-render-suite.log
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase4_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/phase4-source-commit.txt
       - name: Capture preserved Phase 2 game screens
         if: matrix.godot == '4.7.2'
         shell: bash
@@ -127,6 +142,11 @@ jobs:
         shell: pwsh
         run: |
           & ./tools/test_phase3.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/windows-phase3-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Phase 4 audit regressions and six complete matches on Windows
+        shell: pwsh
+        run: |
+          python tools/test_phase4.py *>&1 | Tee-Object ci-artifacts/windows-phase4-tests.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Save Windows evidence
         if: always()
