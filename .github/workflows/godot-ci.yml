@@ -1,7 +1,7 @@
 name: Godot validation
 on:
   push:
-    branches: [main, 'phase2/**']
+    branches: [main, 'phase2/**', 'phase3/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -41,14 +41,19 @@ jobs:
         run: |
           set -o pipefail
           bash tools/test.sh 2>&1 | tee ci-artifacts/godot-tests.log
-      - name: Capture real rendered game screens
+      - name: First-person assertions and full matches on all three maps
+        shell: bash
+        run: |
+          set -o pipefail
+          bash tools/test_phase3.sh 2>&1 | tee ci-artifacts/phase3-tests.log
+      - name: Capture preserved Phase 2 game screens
         if: matrix.godot == '4.7.2'
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-          timeout 90s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility -- --capture-phase2 --seed=8027 2>&1 | tee ci-artifacts/render.log
+          timeout 90s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility res://scenes/phase2.tscn -- --capture-phase2 --seed=8027 2>&1 | tee ci-artifacts/render.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|(^|[[:space:]])ERROR:|FAIL:' ci-artifacts/render.log; then
             echo 'Engine error found in rendered capture.' >&2
             exit 1
@@ -57,7 +62,24 @@ jobs:
           for screen in 01_drawing 02_seeking 03_reveal 04_duel 05_result; do
             test -s "ci-artifacts/$screen.png"
           done
-          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase2_Source.zip HEAD
+      - name: Capture real first-person screens
+        if: matrix.godot == '4.7.2'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 90s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility res://scenes/phase3.tscn -- --capture-phase3 2>&1 | tee ci-artifacts/phase3-render.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|(^|[[:space:]])ERROR:|FAIL:' ci-artifacts/phase3-render.log; then
+            echo 'Engine error in first-person render capture.' >&2
+            exit 1
+          fi
+          grep -Fq PHASE3_SMOKE_READY ci-artifacts/phase3-render.log
+          for screen in phase3_00_map_menu phase3_01_drawing phase3_toy_home_fps phase3_02_reveal phase3_03_swing phase3_warehouse_fps phase3_garden_fps; do
+            test -s "ci-artifacts/$screen.png"
+          done
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase3_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/source-commit.txt
       - name: Save validation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -100,6 +122,11 @@ jobs:
           New-Item -ItemType Directory -Force ci-artifacts | Out-Null
           python tools/verify_project.py
           & ./tools/test.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/windows-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: First-person and three-map engine tests on Windows
+        shell: pwsh
+        run: |
+          & ./tools/test_phase3.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/windows-phase3-tests.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Save Windows evidence
         if: always()

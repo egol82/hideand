@@ -1,3 +1,7 @@
+# Current work: Phase 3
+
+See [PHASE3_TEST_STATUS.md](PHASE3_TEST_STATUS.md) for first-person/multi-map evidence and limitations. The following is preserved Phase 2 history.
+
 # Phase 2 검증 결과
 
 확인일: 2026-09-27 (한국시간).
