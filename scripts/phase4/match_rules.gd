@@ -2,10 +2,12 @@ extends "res://scripts/phase3/match_rules.gd"
 ## Presentation preferences never enter this authority-only rules object.
 const MODES := ["field", "classic"]
 var mode := "field"
+var round_start_scores: Array[int] = [0,0,0,0]
 var discoveries: Array[int] = [0,0,0,0]
 var escapes: Array[int] = [0,0,0,0]
 
 func _prepare_round() -> void:
+	round_start_scores.assign(scores)
 	discoveries.assign([0,0,0,0])
 	escapes.assign([0,0,0,0])
 	super._prepare_round()

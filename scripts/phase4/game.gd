@@ -23,6 +23,19 @@ var heard_point := Vector3.ZERO
 var heard_time := 0.0
 var event_history: Array[Dictionary] = []
 var effects
+const Controls5 = preload("res://scripts/quality/controls.gd")
+const Practice5 = preload("res://scripts/quality/practice.gd")
+const Workshop5 = preload("res://scripts/quality/workshop.gd")
+var controls = Controls5.new()
+var practice = Practice5.new()
+var workshop = Workshop5.new()
+var practice_mode := false
+var practice_respawn := 0.0
+var settings_dirty := false
+var settings_delay := 0.0
+var settings_from_menu := false
+var practice_old_map := "toy_home"
+var practice_old_mode := "field"
 
 func _ready() -> void:
 	rules = Rules4.new()
@@ -30,8 +43,10 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	automated = "--phase4-smoke" in args or "--capture-phase4" in args
 	autoplay = "--phase4-autoplay" in args
-	synthetic_run = automated or autoplay or "--phase4-test" in args
-	if not synthetic_run: preferences.load_local()
+	synthetic_run = automated or autoplay or "--phase4-test" in args or "--quality-test" in args
+	if not synthetic_run:
+		preferences.load_local()
+		controls.load_local()
 	rules.mode = preferences.mode
 	rng.seed = 8027
 	map_id = preferences.map_id
@@ -142,6 +157,7 @@ func set_compact(value: bool) -> void:
 	select_map(map_id)
 
 func _prepare_round() -> void:
+	_clear_feedback()
 	freeze = 0
 	shake = 0
 	clue_spot = -1
@@ -162,6 +178,11 @@ func _prepare_round() -> void:
 		repath[i] = 0
 		foot_distance[i] = 0
 	draft = fighters[0].weapon_data.clone()
+	if not practice_mode:
+		var planned = workshop.take()
+		if planned != null:
+			draft = planned
+			fighters[0].equip(draft)
 	rig.face(Vector3.FORWARD)
 
 func _search_tour(start: Vector3) -> Array[int]:
@@ -187,6 +208,9 @@ func _free_spot(id: int) -> int:
 func _phase_changed() -> void:
 	var phase: int = rules.phase
 	var before := last_phase
+	if workshop.opened and phase in [Rules.Phase.RESULT,Rules.Phase.COMPLETE,Rules.Phase.DRAW]:
+		stash_workshop()
+		workshop.opened = false
 	if before == Rules.Phase.DRAW and phase != before: _commit_draft()
 	last_phase = phase
 	metrics.record("phase",{"value":phase,"round":rules.round_index,"mode":rules.mode,"map":map_id})
@@ -202,13 +226,13 @@ func _phase_changed() -> void:
 			else: ui.hide_modal(); ui.notify("HIDE! CHOOSE YOUR ESCAPE ROUTE",1)
 			audio.play("ready")
 		Rules.Phase.SEEK:
-			ui.hide_modal()
+			if not workshop.opened: ui.hide_modal()
 			fighters[rules.seeker].visible = true
 			for a in fighters: a.show_weapon(false)
 			if before == Rules.Phase.HIDE: ui.notify("READY OR NOT!",1)
 		Rules.Phase.REVEAL:
 			_begin_duel()
-			ui.hide_modal()
+			if not workshop.opened: ui.hide_modal()
 			if 0 in [rules.seeker,rules.opponent]: ui.notify("FOUND! SMASH YOUR WAY OUT",0.65)
 			audio.play_at("found",fighters[rules.opponent].position+Vector3.UP)
 		Rules.Phase.DUEL:
@@ -229,6 +253,9 @@ func _phase_changed() -> void:
 
 func _physics_process(delta: float) -> void:
 	if automated or paused: return
+	if practice_mode:
+		if rules.phase != Rules.Phase.DRAW: _physics_practice(delta)
+		return
 	clock += delta
 	metrics.time += delta
 	# Presentation freeze is never used by simulation, with either accessibility setting.
@@ -259,6 +286,9 @@ func _physics_process(delta: float) -> void:
 			_scan_visible_hiders()
 
 func _process(delta: float) -> void:
+	if settings_dirty:
+		settings_delay -= delta
+		if settings_delay <= 0: _flush_preferences()
 	if autoplay and DisplayServer.get_name() == "headless": return
 	if not is_instance_valid(ui): return
 	var dt := 0.0 if paused else delta
@@ -275,7 +305,7 @@ func _process(delta: float) -> void:
 	rig.feedback_strength = preferences.feedback_strength
 	var show_hands: bool = world_view_active() and not fighters[id].hidden_in_box
 	rig.follow(fighters[id],dt,id != 0 or autoplay,show_hands)
-	focus_spot = _focused_spot() if world_view_active() and not paused and not is_spectating() else -1
+	focus_spot = _focused_spot() if world_view_active() and not paused and not is_spectating() and not practice_mode else -1
 	arena.mark_target(focus_spot)
 	hit_feedback = maxf(0,hit_feedback-dt)
 	hurt_feedback = maxf(0,hurt_feedback-dt)
@@ -290,8 +320,8 @@ func view_target() -> int:
 	return 0
 
 func _move_input() -> Vector3:
-	var direction := super._move_input()
-	return direction*0.42 if Input.is_physical_key_pressed(KEY_CTRL) else direction
+	var direction: Vector3 = rig.move_vector(controls.vector())
+	return direction*0.42 if controls.held("quiet") else direction
 
 func _bot_move(id: int, delta: float) -> Vector3:
 	var actor = fighters[id]
@@ -388,6 +418,7 @@ func _duel_contacts() -> void:
 func _consume_event(e: Dictionary) -> void:
 	if event_history.size() >= 128: event_history.pop_front()
 	event_history.append(e.duplicate())
+	if practice_mode and e.outcome == "miss" and e.attacker_id == 0: practice.record_hit("miss")
 	var feedback := Contact4.viewer_feedback(e,0)
 	match feedback:
 		"hit": hit_feedback = 0.16
@@ -436,7 +467,7 @@ func _update_actor_events(id: int) -> void:
 	foot_distance[id] += moved
 	if foot_distance[id] >= 1.55:
 		foot_distance[id] = 0
-		var quiet: bool = id == 0 and Input.is_physical_key_pressed(KEY_CTRL) and not autoplay
+		var quiet: bool = id == 0 and controls.held("quiet") and not autoplay
 		audio.play_at("step",a.position,0.3 if quiet else 0.7)
 		# A seeker can pursue a noise that actually occurred, not a hidden model's position.
 		if id != rules.seeker and fighters[rules.seeker].position.distance_to(a.position) < (3 if quiet else 8):
@@ -484,37 +515,122 @@ func _interact() -> void:
 		fighters[0].set_hidden(true,near)
 		audio.play_at("hide",fighters[0].position)
 
-func _unhandled_input(e: InputEvent) -> void:
-	if paused or not rules.alive[0]: return
-	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
-		if rules.phase == Rules.Phase.DUEL and 0 in [rules.seeker,rules.opponent]: fighters[0].begin_swing()
-	elif e is InputEventKey and e.pressed and not e.echo:
+func _input(e: InputEvent) -> void:
+	if not is_instance_valid(ui): return
+	if ui.capture_binding(e):
+		get_viewport().set_input_as_handled()
+		return
+	if e is InputEventMouseMotion and wants_capture() and not is_spectating():
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or synthetic_run:
+			rig.look(e.screen_relative)
+			get_viewport().set_input_as_handled()
+		return
+	if e is InputEventKey and e.pressed and not e.echo:
 		match e.physical_keycode:
-			KEY_E: _interact()
-			KEY_C: _taunt()
-			KEY_SHIFT:
-				if rules.phase in [Rules.Phase.HIDE,Rules.Phase.SEEK,Rules.Phase.DUEL] and not is_spectating() and not (rules.phase == Rules.Phase.HIDE and rules.seeker == 0): fighters[0].begin_dash(_move_input())
+			KEY_ESCAPE:
+				if ui.key_page: ui.show_pause()
+				elif workshop.opened and not paused: close_workshop()
+				elif rules.phase == Rules.Phase.MENU and not paused: open_settings()
+				else: toggle_pause()
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F11:
+				if DisplayServer.get_name() != "headless":
+					DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
+				return
+			KEY_F12:
+				if DisplayServer.get_name() != "headless": _save_screenshot()
+				return
+			KEY_ENTER:
+				if rules.phase == Rules.Phase.RESULT: next_round()
+	if controls.pressed(e,"workshop") and not paused:
+		if practice_mode and not ui.modal.visible: open_practice_drawing()
+		elif workshop.opened: close_workshop()
+		elif workshop.allowed(rules.alive[0],rules.round_index,rules.phase): open_workshop()
+		else: return
+		get_viewport().set_input_as_handled()
+	elif controls.pressed(e,"map") and world_view_active() and not workshop.opened:
+		toggle_pause()
+		if paused: ui.show_map()
+		get_viewport().set_input_as_handled()
+
+func _unhandled_input(e: InputEvent) -> void:
+	if paused or not rules.alive[0] or ui.modal.visible: return
+	if controls.pressed(e,"attack"):
+		if practice_mode or (rules.phase == Rules.Phase.DUEL and 0 in [rules.seeker,rules.opponent]): fighters[0].begin_swing()
+	elif controls.pressed(e,"interact") and not practice_mode: _interact()
+	elif controls.pressed(e,"taunt") and not practice_mode: _taunt()
+	elif controls.pressed(e,"dash"):
+		if rules.phase in [Rules.Phase.HIDE,Rules.Phase.SEEK,Rules.Phase.DUEL] and not is_spectating() and not (rules.phase == Rules.Phase.HIDE and rules.seeker == 0):
+			fighters[0].begin_dash(_move_input())
+			if practice_mode and fighters[0].dash_time > 0: practice.dodged = true
 
 func toggle_pause() -> void:
+	if settings_from_menu:
+		settings_from_menu = false
+		paused = false
+		_flush_preferences()
+		ui.show_menu()
+		return
 	if rules.phase in [Rules.Phase.MENU,Rules.Phase.RESULT,Rules.Phase.COMPLETE]: return
-	if not paused and rules.phase == Rules.Phase.DRAW: _commit_draft()
+	if not paused:
+		if workshop.opened: stash_workshop()
+		elif rules.phase == Rules.Phase.DRAW: _commit_draft()
 	paused = not paused
+	controls.release_all()
 	for v in audio.voices: v.stream_paused = paused
 	if paused: ui.show_pause()
-	elif rules.phase == Rules.Phase.DRAW: ui.show_drawing(draft)
-	elif rules.phase == Rules.Phase.HIDE and rules.seeker == 0: ui.show_wait()
-	else: ui.hide_modal()
+	else:
+		_flush_preferences()
+		if workshop.opened: ui.show_drawing(workshop.queued if workshop.queued != null else draft)
+		elif rules.phase == Rules.Phase.DRAW: ui.show_drawing(draft)
+		elif rules.phase == Rules.Phase.HIDE and rules.seeker == 0: ui.show_wait()
+		else: ui.hide_modal()
 	_sync_mouse()
 
+func open_settings() -> void:
+	if rules.phase == Rules.Phase.MENU:
+		settings_from_menu = true
+		paused = true
+		ui.show_pause()
+	else: toggle_pause()
+
 func _save_preferences() -> void:
-	if not synthetic_run: preferences.save_local()
+	if synthetic_run: return
+	settings_dirty = true
+	settings_delay = 0.35
+
+func _flush_preferences() -> void:
+	if not settings_dirty or synthetic_run: return
+	settings_dirty = false
+	var error: Error = preferences.save_local()
+	if error != OK and is_instance_valid(ui): ui.notify(ui.s("save_error")+error_string(error),3)
+
+func set_language(value: String) -> void:
+	if value not in ["en","ko"]: return
+	preferences.language = value
+	_save_preferences()
+	if paused: ui.show_pause()
+	elif rules.phase == Rules.Phase.MENU: ui.show_menu()
+
+func set_sound_cues(value: bool) -> void:
+	preferences.sound_cues = value
+	_save_preferences()
+
+func save_controls() -> void:
+	if not synthetic_run:
+		var error: Error = controls.save_local()
+		if error != OK: ui.notify(ui.s("save_error")+error_string(error),3)
+
 
 func set_sensitivity(value: float) -> void:
+	if not is_finite(value): return
 	preferences.mouse_sensitivity = clampf(value,0.0005,0.008)
 	rig.sensitivity = preferences.mouse_sensitivity
 	_save_preferences()
 
 func set_fov(value: float) -> void:
+	if not is_finite(value): return
 	preferences.vertical_fov = clampf(value,55,90)
 	camera.fov = preferences.vertical_fov
 	_save_preferences()
@@ -529,6 +645,7 @@ func set_reduced_motion(value: bool) -> void:
 	_save_preferences()
 
 func set_volume(value: float) -> void:
+	if not is_finite(value): return
 	preferences.volume = clampf(value,0,1)
 	audio.volume = 0 if DisplayServer.get_name() == "headless" else preferences.volume
 	_save_preferences()
@@ -598,3 +715,145 @@ func _capture(name: String) -> void:
 		printerr("FAIL: capture "+name+" "+error_string(error))
 		get_tree().quit(1)
 	else: print("PHASE4_CAPTURE: "+name)
+
+# Phase 5 lifecycle: practice and the next-round sketch are not authority match modes.
+func start_match(seek_first: bool = true) -> void:
+	practice_mode = false
+	settings_from_menu = false
+	controls.release_all()
+	super.start_match(seek_first)
+
+func _commit_draft() -> void:
+	if workshop.opened:
+		stash_workshop()
+		return
+	super._commit_draft()
+
+func accept_drawing() -> void:
+	if workshop.opened:
+		stash_workshop()
+		ui.ink.text = ui.s("queued")
+		return
+	if practice_mode:
+		if rules.phase != Rules.Phase.DRAW or not is_instance_valid(ui.canvas) or not ui.canvas.data.is_valid(): return
+		_commit_draft()
+		practice.equipped = true
+		rules.phase = Rules.Phase.DUEL
+		last_phase = rules.phase
+		rules.opponent = 1
+		rules.seeker = 0
+		for i in range(4):
+			fighters[i].reset_fight(Vector3(0,0,2.8) if i == 0 else Vector3(0,0,0.2))
+			fighters[i].visible = i < 2
+			fighters[i].collision_layer = 2 if i < 2 else 0
+			fighters[i].show_weapon(i == 0)
+			rules.hp[i] = 3
+		rig.face(Vector3.FORWARD)
+		practice_respawn = 0
+		fighters[1].visual.rotation.y = PI
+		_clear_feedback()
+		ui.hide_modal()
+		_sync_mouse()
+		return
+	super.accept_drawing()
+
+func start_practice() -> void:
+	if rules.phase != Rules.Phase.MENU: return
+	practice_old_map = map_id
+	practice_old_mode = rules.mode
+	select_map("toy_home")
+	preferences.map_id = practice_old_map
+	practice_mode = true
+	practice = Practice5.new()
+	workshop = Workshop5.new()
+	paused = false
+	rules.start(true)
+
+func open_practice_drawing() -> void:
+	if not practice_mode or paused or rules.phase == Rules.Phase.DRAW: return
+	draft = fighters[0].weapon_data.clone()
+	fighters[0].cancel_attack()
+	rules.phase = Rules.Phase.DRAW
+	last_phase = rules.phase
+	ui.show_drawing(draft)
+	controls.release_all()
+	_sync_mouse()
+
+func _physics_practice(delta: float) -> void:
+	clock += delta
+	fighters[0].step(delta,_move_input(),_aim_input())
+	practice.record_move(fighters[0].position.distance_to(fighters[0].old_position))
+	_update_actor_events(0)
+	if not arena.inside(fighters[0].position): fighters[0].reset_fight(Vector3(0,0,2.8))
+	if practice_respawn > 0:
+		practice_respawn -= delta
+		if practice_respawn <= 0:
+			fighters[1].reset_fight(Vector3(0,0,0.2))
+			fighters[1].show_weapon(false)
+			rules.hp[1] = 3
+		return
+	fighters[1].step(delta,Vector3.ZERO,fighters[0].position-fighters[1].position)
+	var e := Contact4.contact(fighters[0],fighters[1],get_world_3d().direct_space_state)
+	if e.is_empty(): e = Contact4.wall_contact(fighters[0],get_world_3d().direct_space_state)
+	if not e.is_empty():
+		_consume_event(e)
+		practice.record_hit(e.outcome)
+		if e.outcome == "hit":
+			fighters[1].take_hit(fighters[1].position-fighters[0].position)
+			rules.hp[1] -= 1
+			if rules.hp[1] <= 0:
+				practice_respawn = 0.65
+				fighters[1].visible = false
+				fighters[1].collision_layer = 0
+
+func open_workshop() -> void:
+	if practice_mode or paused or not workshop.allowed(rules.alive[0],rules.round_index,rules.phase): return
+	workshop.opened = true
+	var sketch = workshop.queued if workshop.queued != null else fighters[0].weapon_data
+	ui.show_drawing(sketch)
+	controls.release_all()
+	_sync_mouse()
+
+func stash_workshop() -> bool:
+	if not workshop.opened or not is_instance_valid(ui.canvas): return false
+	ui.canvas.finish_stroke()
+	return workshop.keep(ui.canvas.data)
+
+func close_workshop() -> void:
+	stash_workshop()
+	workshop.opened = false
+	ui.hide_modal()
+	_sync_mouse()
+
+func return_to_menu() -> void:
+	_clear_feedback()
+	var restore := practice_mode
+	practice_mode = false
+	settings_from_menu = false
+	workshop = Workshop5.new()
+	controls.release_all()
+	_flush_preferences()
+	super.return_to_menu()
+	if restore:
+		select_map(practice_old_map)
+		set_mode(practice_old_mode)
+		ui.show_menu()
+
+func _exit_tree() -> void:
+	_flush_preferences()
+	controls.release_all()
+	super._exit_tree()
+
+func _clear_feedback() -> void:
+	hit_feedback = 0
+	hurt_feedback = 0
+	block_feedback = 0
+	local_notice = ""
+	local_notice_time = 0
+	if is_instance_valid(rig): rig.kick = 0
+	if is_instance_valid(ui):
+		ui.message_seconds = 0
+		ui.toast.text = ""
+	if is_instance_valid(effects): effects.reset()
+	if is_instance_valid(audio):
+		for voice in audio.voices: voice.stop()

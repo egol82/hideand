@@ -3,6 +3,8 @@ extends RefCounted
 ## Project-authored rounded meshes and a coherent (not identical) material family.
 static var materials: Dictionary = {}
 static var meshes: Dictionary = {}
+static var detail_textures: Dictionary = {}
+static var sphere_mesh: SphereMesh
 
 static func material(color: Color, kind: String = "vinyl") -> StandardMaterial3D:
 	var key := kind+color.to_html()
@@ -11,6 +13,10 @@ static func material(color: Color, kind: String = "vinyl") -> StandardMaterial3D
 	m.albedo_color = color
 	m.roughness = {"foam":0.88,"wood":0.62,"vinyl":0.53,"fabric":0.95,"ink":0.8}.get(kind,0.75)
 	m.metallic_specular = 0.2 if kind == "foam" else 0.32
+	if kind in ["foam","fabric","wood"]:
+		m.albedo_texture = _detail(kind)
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3.ONE*(4.0 if kind == "foam" else 2.0)
 	materials[key] = m
 	return m
 
@@ -66,11 +72,13 @@ static func box(parent: Node3D, at: Vector3, size3: Vector3, color: Color, kind:
 	return n
 
 static func ball(parent: Node3D, at: Vector3, size3: Vector3, color: Color, kind: String = "vinyl") -> MeshInstance3D:
-	var m := SphereMesh.new()
-	m.radius = 1
-	m.height = 2
-	m.radial_segments = 24
-	m.rings = 12
+	if sphere_mesh == null:
+		sphere_mesh = SphereMesh.new()
+		sphere_mesh.radius = 1
+		sphere_mesh.height = 2
+		sphere_mesh.radial_segments = 24
+		sphere_mesh.rings = 12
+	var m := sphere_mesh
 	var n := MeshInstance3D.new()
 	n.mesh = m
 	n.scale = size3
@@ -123,8 +131,8 @@ static func avatar(color: Color) -> Node3D:
 		foot.name = "LeftFoot" if side < 0 else "RightFoot"
 		var arm := ball(root,Vector3(side*0.43,0.91,0.07),Vector3(0.13,0.28,0.15),color)
 		arm.name = "LeftArm" if side < 0 else "RightArm"
-		ball(root,Vector3(side*0.19,1.36,0.393),Vector3(0.043,0.064,0.026),Color("243b40"),"ink")
-		ball(root,Vector3(side*0.178,1.379,0.415),Vector3(0.011,0.013,0.008),Color("fff2d6"))
+		ball(root,Vector3(side*0.19,1.36,0.393),Vector3(0.043,0.064,0.026),Color("243b40"),"ink").name = ("Left" if side < 0 else "Right")+"Eye"
+		ball(root,Vector3(side*0.178,1.379,0.415),Vector3(0.011,0.013,0.008),Color("fff2d6")).name = ("Left" if side < 0 else "Right")+"Glint"
 		ball(root,Vector3(side*0.32,1.19,0.329),Vector3(0.08,0.035,0.019),color.lerp(Color("ed9b9b"),0.7))
 	var mouth := ball(root,Vector3(0,1.19,0.404),Vector3(0.072,0.042,0.018),Color("31434a"),"ink")
 	mouth.name = "Mouth"
@@ -140,3 +148,19 @@ static func mitten(parent: Node3D, at: Vector3, color: Color, left: bool = false
 	box(root,Vector3(0,-0.075,0.126),Vector3(0.13,0.09,0.18),color.darkened(0.06),"vinyl",0.035)
 	box(root,Vector3(0,-0.22,0.23),Vector3(0.105,0.30,0.115),color,"vinyl",0.05).rotation.x = -0.35
 	return root
+
+static func _detail(kind: String) -> Texture2D:
+	if detail_textures.has(kind): return detail_textures[kind]
+	# Tiny project-authored tile, no downloaded photo textures or nondeterministic noise.
+	var image := Image.create(64,64,false,Image.FORMAT_RGB8)
+	for y in range(64):
+		for x in range(64):
+			var tone := 1.0
+			if kind == "fabric": tone = 0.94 if (x+y)%4 == 0 else 1.0
+			elif kind == "wood": tone = 0.96+0.04*sin(TAU*float(y)/8+0.4*sin(TAU*float(x)/64))
+			else: tone = 0.96 if (x*13+y*7)%37 == 0 else 1.0
+			image.set_pixel(x,y,Color(tone,tone,tone))
+	image.generate_mipmaps()
+	var texture := ImageTexture.create_from_image(image)
+	detail_textures[kind] = texture
+	return texture

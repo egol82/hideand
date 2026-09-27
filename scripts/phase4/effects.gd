@@ -44,3 +44,9 @@ func advance(delta: float) -> void:
 		var weight: float = p.life/0.28
 		var basis := Basis.from_euler(Vector3(i*0.6,weight*4,i*0.3)).scaled(Vector3(0.055,0.018,0.09)*weight)
 		multimesh.set_instance_transform(i,Transform3D(basis,p.p))
+
+func reset() -> void:
+	cursor = 0
+	for i in range(particles.size()):
+		particles[i].life = 0.0
+		multimesh.set_instance_transform(i,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO))

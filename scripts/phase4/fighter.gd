@@ -15,6 +15,8 @@ var old_position := Vector3.ZERO
 var motion := Vector3.ZERO
 var dodge_direction := Vector3.ZERO
 var swing_finished := false
+var body_art: Node3D
+var expression_clock := 0.0
 
 func _ready() -> void:
 	super._ready()
@@ -22,8 +24,12 @@ func _ready() -> void:
 	old.remove_child(weapon_pivot)
 	remove_child(old)
 	old.queue_free()
-	visual = Art4.avatar(tint)
+	# Rotation-only authority root; cosmetic squash/bob never scales the weapon.
+	visual = Node3D.new()
+	visual.name = "FacingRoot"
 	add_child(visual)
+	body_art = Art4.avatar(tint)
+	visual.add_child(body_art)
 	visual.add_child(weapon_pivot)
 	old_position = position
 
@@ -120,13 +126,19 @@ func step(delta: float, desired: Vector3, aim: Vector3) -> void:
 		if absf(normal.y) < 0.5: knock_velocity = knock_velocity.slide(normal)
 	flash = maxf(0,flash-delta)
 	move_phase += Vector2(velocity.x,velocity.z).length()*delta*2.9
-	visual.position.y = absf(sin(move_phase))*minf(wish.length(),1)*0.038
-	visual.scale = Vector3(1.08,0.91,1.08) if flash > 0 else Vector3.ONE
-	visual.rotation.z = -sin(move_phase)*wish.length()*0.025
-	visual.get_node("LeftFoot").position.z = 0.10+sin(move_phase)*0.10*wish.length()
-	visual.get_node("RightFoot").position.z = 0.10-sin(move_phase)*0.10*wish.length()
-	visual.get_node("RightArm").rotation.z = -Attack.progress(handling,elapsed)*0.4 if elapsed >= 0 else 0.0
-	visual.get_node("Mouth").scale.y = 0.084 if flash > 0 else 0.042
+	body_art.position.y = absf(sin(move_phase))*minf(wish.length(),1)*0.038
+	body_art.scale = Vector3(1.08,0.91,1.08) if flash > 0 else Vector3.ONE
+	body_art.rotation.z = -sin(move_phase)*wish.length()*0.025
+	body_art.get_node("LeftFoot").position.z = 0.10+sin(move_phase)*0.10*wish.length()
+	body_art.get_node("RightFoot").position.z = 0.10-sin(move_phase)*0.10*wish.length()
+	body_art.get_node("RightArm").rotation.z = -Attack.progress(handling,elapsed)*0.4 if elapsed >= 0 else 0.0
+	body_art.get_node("Mouth").scale.y = 0.084 if flash > 0 else (0.058 if elapsed >= 0 else 0.042)
+	expression_clock += delta
+	var blink := 0.12 if fmod(expression_clock,4.6) > 4.45 and flash <= 0 else 1.0
+	for side in ["Left","Right"]:
+		body_art.get_node(side+"Eye").scale.y = 0.064*blink
+		body_art.get_node(side+"Glint").visible = blink > 0.5
+	body_art.rotation.x = -0.07 if flash > 0 else (0.04 if elapsed >= 0 else 0.0)
 	_apply_pose()
 
 func attack_active() -> bool:
@@ -147,6 +159,10 @@ func take_hit(direction: Vector3) -> bool:
 
 func reset_fight(at: Vector3) -> void:
 	super.reset_fight(at)
+	flash = 0
+	body_art.position = Vector3.ZERO
+	body_art.scale = Vector3.ONE
+	body_art.rotation = Vector3.ZERO
 	motion = Vector3.ZERO
 	knock_velocity = Vector3.ZERO
 	velocity = Vector3.ZERO
