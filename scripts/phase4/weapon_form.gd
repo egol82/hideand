@@ -21,34 +21,9 @@ static func contours(data) -> Array[PackedVector2Array]:
 		if not ambiguous: safe.append(all[i])
 	return safe
 
+const Skin6 = preload("res://scripts/graphics/weapon_skin.gd")
 static func build(data) -> MeshInstance3D:
-	var weapon := Tubes.build(data)
-	var mat := Art.material(data.weapon_color(),"foam").duplicate() as StandardMaterial3D
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	weapon.material_override = mat
-	var polys := contours(data)
-	if polys.is_empty(): return weapon
-	var s := SurfaceTool.new()
-	s.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for p in polys:
-		var triangles := Geometry2D.triangulate_polygon(p)
-		for side in [-1.0,1.0]:
-			for i in triangles:
-				var v: Vector3 = data.point_to_world(p[i])+Vector3.UP*DEPTH*side
-				s.set_normal(Vector3.UP*side)
-				s.add_vertex(v)
-		for i in range(p.size()):
-			var a: Vector3 = data.point_to_world(p[i])
-			var b: Vector3 = data.point_to_world(p[(i+1)%p.size()])
-			for v in [a+Vector3.UP*DEPTH,b+Vector3.UP*DEPTH,a-Vector3.UP*DEPTH,a-Vector3.UP*DEPTH,b+Vector3.UP*DEPTH,b-Vector3.UP*DEPTH]:
-				s.set_normal((b-a).cross(Vector3.UP).normalized())
-				s.add_vertex(v)
-	var fill := MeshInstance3D.new()
-	fill.name = "SafeFoamFill"
-	fill.mesh = s.commit()
-	fill.material_override = mat
-	weapon.add_child(fill)
-	return weapon
+	return Skin6.build(data,contours(data))
 
 static func samples(data) -> PackedVector3Array:
 	var result: PackedVector3Array = data.local_samples(0.11)

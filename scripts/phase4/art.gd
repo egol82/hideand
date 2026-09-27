@@ -6,19 +6,9 @@ static var meshes: Dictionary = {}
 static var detail_textures: Dictionary = {}
 static var sphere_mesh: SphereMesh
 
+const Surfaces6 = preload("res://scripts/graphics/surfaces.gd")
 static func material(color: Color, kind: String = "vinyl") -> StandardMaterial3D:
-	var key := kind+color.to_html()
-	if materials.has(key): return materials[key]
-	var m := StandardMaterial3D.new()
-	m.albedo_color = color
-	m.roughness = {"foam":0.88,"wood":0.62,"vinyl":0.53,"fabric":0.95,"ink":0.8}.get(kind,0.75)
-	m.metallic_specular = 0.2 if kind == "foam" else 0.32
-	if kind in ["foam","fabric","wood"]:
-		m.albedo_texture = _detail(kind)
-		m.uv1_triplanar = true
-		m.uv1_scale = Vector3.ONE*(4.0 if kind == "foam" else 2.0)
-	materials[key] = m
-	return m
+	return Surfaces6.make(color,kind)
 
 static func rounded(size3: Vector3, radius: float = 0.12) -> ArrayMesh:
 	var r := minf(radius,minf(size3.x,minf(size3.y,size3.z))*0.45)
@@ -76,8 +66,8 @@ static func ball(parent: Node3D, at: Vector3, size3: Vector3, color: Color, kind
 		sphere_mesh = SphereMesh.new()
 		sphere_mesh.radius = 1
 		sphere_mesh.height = 2
-		sphere_mesh.radial_segments = 24
-		sphere_mesh.rings = 12
+		sphere_mesh.radial_segments = 48
+		sphere_mesh.rings = 24
 	var m := sphere_mesh
 	var n := MeshInstance3D.new()
 	n.mesh = m
@@ -143,9 +133,14 @@ static func mitten(parent: Node3D, at: Vector3, color: Color, left: bool = false
 	var root := Node3D.new()
 	root.position = at
 	parent.add_child(root)
-	box(root,Vector3(0,-0.008,0.045),Vector3(0.15,0.17,0.17),color,"vinyl",0.055)
+	box(root,Vector3(0,-0.008,0.045),Vector3(0.15,0.17,0.17),color,"vinyl",0.070)
 	ball(root,Vector3(-0.065 if not left else 0.065,0.025,-0.009),Vector3(0.052,0.068,0.072),color)
-	box(root,Vector3(0,-0.075,0.126),Vector3(0.13,0.09,0.18),color.darkened(0.06),"vinyl",0.035)
+	box(root,Vector3(0,-0.075,0.126),Vector3(0.145,0.09,0.18),Color("e7dcca"),"fabric",0.035)
+	# Soft finger-pad divisions and a stitched cuff; no changes to grip origin or authority.
+	for i in range(3):
+		ball(root,Vector3(-0.046+i*0.046,0.033,-0.025),Vector3(0.026,0.045,0.042),color)
+	for i in [-1,0,1]:
+		box(root,Vector3(i*0.037,-0.085,0.027),Vector3(0.012,0.018,0.008),color.darkened(0.20),"fabric",0.003)
 	box(root,Vector3(0,-0.22,0.23),Vector3(0.105,0.30,0.115),color,"vinyl",0.05).rotation.x = -0.35
 	return root
 

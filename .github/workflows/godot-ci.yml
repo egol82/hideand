@@ -1,7 +1,7 @@
 name: Godot validation
 on:
   push:
-    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**', 'phase5/**']
+    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**', 'phase5/**', 'phase6/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -53,6 +53,8 @@ jobs:
           python3 tools/test_phase4.py 2>&1 | tee ci-artifacts/phase4-suite.log
       - name: Practice, remapping, recovery and next-round workshop tests
         run: python3 tools/test_quality.py
+      - name: Graphics invariants and new entry
+        run: python3 tools/test_graphics.py
       - name: Render Korean and English playability screens
         if: matrix.godot == '4.7.2'
         shell: bash
@@ -65,6 +67,16 @@ jobs:
           timeout 150s xvfb-run -a python3 tools/test_quality.py --capture 2>&1 | tee ci-artifacts/quality-capture-suite.log
           git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase5_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase5-source-commit.txt
+      - name: Render Phase 6 graphics evidence
+        if: matrix.godot == '4.7.2'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 240s xvfb-run -a python3 tools/test_graphics.py --capture 2>&1 | tee ci-artifacts/graphics-capture-suite.log
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase6_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/phase6-source-commit.txt
       - name: Capture Phase 4 real game screens
         if: matrix.godot == '4.7.2'
         shell: bash
@@ -166,6 +178,11 @@ jobs:
         shell: pwsh
         run: |
           python tools/test_quality.py *>&1 | Tee-Object ci-artifacts/windows-quality-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Graphics invariants and new entry on Windows
+        shell: pwsh
+        run: |
+          python tools/test_graphics.py *>&1 | Tee-Object ci-artifacts/windows-graphics-tests.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Save Windows evidence
         if: always()

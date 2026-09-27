@@ -1,18 +1,18 @@
-# Astra — continue Phase 5
+# Astra — continue Phase 6
 
-Work on `phase5/playability-and-recovery`. Read AGENTS.md, docs/PHASE5.md and docs/PHASE5_TEST_STATUS.md. Default entry is scenes/phase5.tscn using the improved Phase 4 controllers and standalone scripts/quality components. Do not restart the game or add an extra inheritance layer just to increment a phase number.
+Repository egol82/hideand, branch `phase6/graphics-polish` (not the stale main branch).
 
-## Verify first
-1. Set GODOT_BIN to an official Godot Standard executable.
-2. Run tools/verify_project.py, test.sh, test_phase3.sh, test_phase4.py and test_quality.py (Windows .ps1 equivalents for the two shell scripts).
-3. In a graphics session run test_quality.py --capture; inspect the actual screenshots and warnings.
-4. Manually try both languages, default and rebound keys, untimed practice, field/classic, captured next-round drawing, and return to title.
-5. Save two versions of a toy in a test slot, damage a copied test primary, and verify backup recovery with a clear warning. Do not damage a player's real files to test.
+Read AGENTS.md, README.md, docs/PHASE6.md and docs/PHASE6_TEST_STATUS.md. Open project.godot with Godot Standard. Default entry is scenes/phase6.tscn.
 
-## Invariants
-Original drawings remain vectors and actual geometry. Body cosmetics never scale authority weapons. Presentation and locale cannot change rules. Practice has no score/time limit. Captured drawing cannot affect current play and must survive round-end/menus without losing the last valid draft. Normalized JSON digest and semantic validation must agree after a JSON number round-trip.
+This branch adds a presentation component to the real Phase 5 controller. Do not replace it with a static image/web mockup, change the engine or replace user vector drawings with stock weapons.
 
-## Next priorities
-Human input/audio/FPS testing, proper sculpted/rigged hands and contact alignment, lighting authoring (UV2/baked GI is NOT complete), real four-PC networking, release export, remaining world-message localization and full controller/menu accessibility. Do not claim these from automated engine tests.
+First reproduce the existing tests and actual 1st-person/workshop render. Preserve original input/storage/score behavior, cosmetic/authority isolation, private hiding information, all map/nav/physics fingerprints and the user's LICENSE. Keep prior regression suites and add `python tools/test_graphics.py`; use --capture on a real display or Xvfb.
 
-Publish exact source SHA, platform/engine, passed and failed commands, genuine screenshots and explicit unfinished scope. Preserve feature branches, user LICENSE and unrelated changes. No unrequested merges or paid runtime services.
+Art follow-up priorities:
+1. Inspect actual mouse-driven movement and swinging on a target Windows GPU, including wide/concave drawings near walls. Current renders are staged software GL, not that test.
+2. Use scenes/graphics/lounge_dressing.tscn as the editable art-placement starting point. Extend stable authored prop IDs rather than adding arbitrary objects in traversable lanes.
+3. For baked indirect lighting, build a real UV2/mesh/bake pipeline and test dynamic probe lighting; it is NOT already implemented by Studio.environment or contact planes.
+4. Refine custom hand gripping/animation without changing AttackSpec or actual reach. Current round mitten components are not full IK.
+5. Expand the house art standard to warehouse/garden after a representative room is actually approved. Avoid photoreal textures or an unrelated black-sticker weapon style.
+
+Work on a feature branch and PR, not force push or automatic merge. Record source SHA, exact engine version, exit status/completion markers, genuine captures and limits.

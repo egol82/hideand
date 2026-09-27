@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 5 playability update; Phase 1 scene remains available.
+; Hide & Smashing — Phase 6 graphics polish; historical entries remain available.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase5.tscn"
+run/main_scene="res://scenes/phase6.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 5."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 6: toy-world graphics."
 
 [display]
 window/size/viewport_width=1280
@@ -20,7 +20,7 @@ window/size/resizable=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
-anti_aliasing/quality/msaa_3d=1
+anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.10, 0.14, 0.18, 1)
 
 [physics]
