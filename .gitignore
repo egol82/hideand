@@ -15,3 +15,5 @@ ci-artifacts/*
 
 # This prototype uses path-based script references.
 *.gd.uid
+
+*.uid

@@ -80,6 +80,14 @@ func _lounge() -> void:
 		Art4.box(self,Vector3(x,2.5,-9.66),Vector3(1.9,1.2,0.12),Color("ba9b7c"),"wood",0.045)
 		Art4.box(self,Vector3(x,2.5,-9.56),Vector3(1.62,0.94,0.04),Color("9bc1bc"),"wood",0.015)
 		Art4.ball(self,Vector3(x+0.35,2.65,-9.50),Vector3(0.16,0.16,0.015),Color("f1ce8f"))
+	# Readable geometric postcards on the opposite wall. Decorative only; no hidden-state input.
+	for i in range(3):
+		var at := Vector3(-4.4+i*4.4,2.05,9.67)
+		Art4.box(self,at,Vector3(2.6,1.55,0.12),Color("b9a58a"),"wood",0.06)
+		Art4.box(self,at+Vector3(0,0,-0.09),Vector3(2.37,1.32,0.04),[Color("c2d9c9"),Color("a8cbd1"),Color("e6ceae")][i],"fabric",0.03)
+		Art4.ball(self,at+Vector3(0.54,0.27,-0.14),Vector3(0.21,0.21,0.015),Color("f0cb7e"))
+		Art4.box(self,at+Vector3(-0.34,-0.26,-0.14),Vector3(1.05,0.49,0.04),Color("82b2a3"),"foam",0.02).rotation.z = 0.2
+		Art4.box(self,at+Vector3(0.22,-0.45,-0.18),Vector3(1.75,0.18,0.04),Color("739c92"),"foam",0.025)
 	# Small visible stitches and geometric rug accents, below the collision floor.
 	for x in range(-3,4):
 		for z in [-3.6,3.6]: Art4.box(self,Vector3(x,0.055,z),Vector3(0.28,0.012,0.05),Color("f3dcc0"),"fabric",0.004)

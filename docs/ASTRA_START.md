@@ -1,22 +1,18 @@
-# Astra — continue Phase 4, do not restart the game
+# Astra — continue Phase 5
 
-Use `phase4/production-feel`. Read `AGENTS.md`, `docs/PHASE4.md` and `docs/PHASE4_TEST_STATUS.md` before changes. Default is `scenes/phase4.tscn`; all older scenes are historical comparisons.
+Work on `phase5/playability-and-recovery`. Read AGENTS.md, docs/PHASE5.md and docs/PHASE5_TEST_STATUS.md. Default entry is scenes/phase5.tscn using the improved Phase 4 controllers and standalone scripts/quality components. Do not restart the game or add an extra inheritance layer just to increment a phase number.
 
-The user's production audit is the basis: absolute aim, capped escape rewards, classified contact feedback and comfort-independent clocks are mandatory. Keep the user's original drawing as geometry, Godot/GDScript and the existing LICENSE. No paid service, runtime AI call, analytics upload or Unity migration.
+## Verify first
+1. Set GODOT_BIN to an official Godot Standard executable.
+2. Run tools/verify_project.py, test.sh, test_phase3.sh, test_phase4.py and test_quality.py (Windows .ps1 equivalents for the two shell scripts).
+3. In a graphics session run test_quality.py --capture; inspect the actual screenshots and warnings.
+4. Manually try both languages, default and rebound keys, untimed practice, field/classic, captured next-round drawing, and return to title.
+5. Save two versions of a toy in a test slot, damage a copied test primary, and verify backup recovery with a clear warning. Do not damage a player's real files to test.
 
-## First run
+## Invariants
+Original drawings remain vectors and actual geometry. Body cosmetics never scale authority weapons. Presentation and locale cannot change rules. Practice has no score/time limit. Captured drawing cannot affect current play and must survive round-end/menus without losing the last valid draft. Normalized JSON digest and semantic validation must agree after a JSON number round-trip.
 
-1. `python tools/verify_project.py`
-2. Set `GODOT_BIN` to an official Godot Standard executable.
-3. `bash tools/test.sh` and `bash tools/test_phase3.sh` (Windows .ps1 equivalents exist).
-4. `python tools/test_phase4.py`
-5. Open `project.godot`, F5; try SEEK FIRST and HIDE FIRST in FIELD and CLASSIC.
-6. Render evidence using `python tools/test_phase4.py --skip-matches --capture` in a graphical environment; CI uses Xvfb/software OpenGL.
+## Next priorities
+Human input/audio/FPS testing, proper sculpted/rigged hands and contact alignment, lighting authoring (UV2/baked GI is NOT complete), real four-PC networking, release export, remaining world-message localization and full controller/menu accessibility. Do not claim these from automated engine tests.
 
-## Next effort
-
-Human test first: draw an odd weapon, tune grip/handling, attack/miss/block/dodge, find a hidden friend, counterattack in-place and leave. Compare field and classic with actual participants before choosing a final rule. Prioritize authored hands/body animation, physically plausible contact, meaningful spatial sounds and one art-complete room rather than more maps.
-
-The editor snapshot helper is only a starting point; UV2, baked lighting, IK and production-quality asset authoring are not complete. Online four-player play is not implemented. Do not imply otherwise from bot tests.
-
-Report exact source SHA, engine/platform, commands, failures/warnings, authentic captures and remaining limits. Never turn off a test just to produce a passing report. Keep changes on a feature branch/PR without forced pushes or unsolicited merges.
+Publish exact source SHA, platform/engine, passed and failed commands, genuine screenshots and explicit unfinished scope. Preserve feature branches, user LICENSE and unrelated changes. No unrequested merges or paid runtime services.

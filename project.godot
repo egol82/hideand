@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 4 offline match; Phase 1 scene remains available.
+; Hide & Smashing — Phase 5 playability update; Phase 1 scene remains available.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase4.tscn"
+run/main_scene="res://scenes/phase5.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 4."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 5."
 
 [display]
 window/size/viewport_width=1280
