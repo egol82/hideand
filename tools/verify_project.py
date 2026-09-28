@@ -30,7 +30,7 @@ def main() -> int:
         checks.append({'name': name, 'pass': bool(value)})
         print(f"{'PASS' if value else 'FAIL'}: {name}")
     config = (ROOT/'project.godot').read_text(encoding='utf-8')
-    check('run/main_scene="res://scenes/phase7.tscn"' in config, 'Phase 7 main scene configured')
+    check('run/main_scene="res://scenes/phase8.tscn"' in config, 'Phase 8 main scene configured')
     for filename in ['scenes/main.tscn','scenes/phase2.tscn','scenes/phase3.tscn','scenes/phase4.tscn','tests/test_weapon.gd','tests/phase2/test_phase2.gd']:
         check((ROOT/filename).is_file(), f'preserved entry: {filename}')
     for file in sorted((ROOT/'scripts').rglob('*.gd')) + sorted((ROOT/'tests').rglob('*.gd')):
