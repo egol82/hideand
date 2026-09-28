@@ -44,7 +44,7 @@ static func textures(kind: String) -> Array:
 			var dx := (height_at(x+1,y,kind)-height_at(x-1,y,kind))*1.9
 			var dy := (height_at(x,y+1,kind)-height_at(x,y-1,kind))*1.9
 			var n := Vector3(-dx,-dy,1).normalized()
-			normal.set_pixel(x,y,Color(n.x*0.5+0.5,n.y*0.5+0.5))
+			normal.set_pixel(x,y,Color(n.x*0.5+0.5,n.y*0.5+0.5,n.z*0.5+0.5))
 	albedo.generate_mipmaps(); normal.generate_mipmaps()
 	var result := [ImageTexture.create_from_image(albedo),ImageTexture.create_from_image(normal)]
 	tiles[kind] = result
