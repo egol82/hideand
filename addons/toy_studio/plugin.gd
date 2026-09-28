@@ -5,19 +5,22 @@ var armed:=false
 var started:=false
 var selected_file:=false
 var in_editor_operation:=false
+var verify_existing:=false
 var waited:=0.0
 var lightmap: LightmapGI
 func _enter_tree() -> void:
-	if "--studio-bake" in OS.get_cmdline_user_args():
+	verify_existing="--studio-verify-bake" in OS.get_cmdline_user_args()
+	if "--studio-bake" in OS.get_cmdline_user_args() or verify_existing:
+		started=verify_existing
 		armed=true; call_deferred("open_room")
 func open_room() -> void:
 	EditorInterface.open_scene_from_path("res://assets/renderlab/generated/sugar_static.scn")
 func finish(ok: bool, reason: String) -> void:
 	armed=false; set_process(false)
-	var data: Dictionary={"baked":ok,"reason":reason,"renderer":RenderingServer.get_current_rendering_method(),"users":lightmap.light_data.get_user_count() if is_instance_valid(lightmap) and lightmap.light_data!=null else 0}
+	var data: Dictionary={"baked":ok,"operation":"verify_existing" if verify_existing else "bake","reason":reason,"renderer":RenderingServer.get_current_rendering_method(),"users":lightmap.light_data.get_user_count() if is_instance_valid(lightmap) and lightmap.light_data!=null else 0}
 	var f:=FileAccess.open("res://ci-artifacts/studio-bake.json",FileAccess.WRITE)
 	if f!=null: f.store_string(JSON.stringify(data,"  ")); f.close()
-	if ok: print("STUDIO_GI_BAKE_PASS: ",JSON.stringify(data))
+	if ok: print("STUDIO_GI_VERIFY_PASS: " if verify_existing else "STUDIO_GI_BAKE_PASS: ",JSON.stringify(data))
 	else: printerr("STUDIO_GI_BAKE_FAILED: ",reason)
 	get_tree().quit(0 if ok else 1)
 func save_baked_scene() -> void:
@@ -43,8 +46,9 @@ func _process(delta: float) -> void:
 			button.emit_signal("pressed")
 			in_editor_operation=false
 	elif lightmap.light_data!=null and lightmap.light_data.get_user_count()>0:
+		# Save synchronously from the regular editor process, not the deferred-message queue.
 		armed=false; set_process(false)
-		call_deferred("save_baked_scene")
+		save_baked_scene()
 	elif not selected_file:
 		var dialog=find_save_dialog(EditorInterface.get_base_control())
 		if dialog!=null:
