@@ -1,7 +1,8 @@
 extends RefCounted
 ## Actual editable static meshes + UV2, not a claimed lightmap bake.
 var mesh_cache: Dictionary={}
-var report: Dictionary={"meshes":0,"unique_unwraps":0,"vertices":0,"errors":[],"light_data_baked":false}
+var measures: Dictionary={}
+var report: Dictionary={"meshes":0,"unique_unwraps":0,"vertices":0,"triangles":0,"errors":[],"light_data_baked":false}
 func export_room(arena: Node3D, destination: String) -> Dictionary:
 	var root:=Node3D.new(); root.name="SugarStaticStudio"
 	gather(arena,root,arena.global_transform.affine_inverse())
@@ -34,7 +35,7 @@ func export_room(arena: Node3D, destination: String) -> Dictionary:
 		error=ResourceSaver.save(scene,destination,ResourceSaver.FLAG_COMPRESS)
 	if error!=OK: report.errors.append(error_string(error))
 	report["path"]=destination
-	root.free(); mesh_cache.clear()
+	root.free(); mesh_cache.clear(); measures.clear()
 	return report
 func gather(node: Node, target: Node3D, inverse: Transform3D) -> void:
 	if node is Node3D and not node.is_visible_in_tree(): return
@@ -58,8 +59,40 @@ func gather(node: Node, target: Node3D, inverse: Transform3D) -> void:
 			var arrays:=copy.surface_get_arrays(surface)
 			if arrays[Mesh.ARRAY_TEX_UV2]==null or arrays[Mesh.ARRAY_TEX_UV2].size()!=arrays[Mesh.ARRAY_VERTEX].size(): report.errors.append("Missing UV2: "+str(node.name))
 			report.vertices+=arrays[Mesh.ARRAY_VERTEX].size()
+		var source_measure := measure(node.mesh)
+		var output_measure := measure(copy)
+		if absf(source_measure.area-output_measure.area)>maxf(0.00001,source_measure.area*0.00001): report.errors.append("Surface area changed: "+str(node.name))
+		var source_bounds: AABB = source_measure.bounds
+		var unwrapped_bounds: AABB = output_measure.bounds
+		if not source_bounds.position.is_equal_approx(unwrapped_bounds.position) or not source_bounds.size.is_equal_approx(unwrapped_bounds.size): report.errors.append("Vertex bounds changed: "+str(node.name))
 		var n:=MeshInstance3D.new(); n.name="Static_%04d"%report.meshes
 		n.mesh=copy; n.transform=transform3; n.material_override=node.material_override
+		n.set_meta("source_surface_area",source_measure.area)
+		n.set_meta("source_aabb",source_bounds)
+		report.triangles += output_measure.triangles
 		n.cast_shadow=node.cast_shadow; n.gi_mode=GeometryInstance3D.GI_MODE_STATIC
 		target.add_child(n); n.owner=target; report.meshes+=1
 	for child in node.get_children(): gather(child,target,inverse)
+
+func measure(mesh: Mesh) -> Dictionary:
+	var key := mesh.get_instance_id()
+	if measures.has(key): return measures[key]
+	var area := 0.0; var triangles := 0; var has_bounds := false; var bounds := AABB()
+	for surface in range(mesh.get_surface_count()):
+		var arrays: Array = mesh.surface_get_arrays(surface)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var indices = arrays[Mesh.ARRAY_INDEX]
+		var indexed: bool = indices != null and indices.size() > 0
+		var count: int = indices.size() if indexed else vertices.size()
+		triangles += int(count / 3)
+		for v in vertices:
+			if not has_bounds: bounds=AABB(v,Vector3.ZERO); has_bounds=true
+			else: bounds=bounds.expand(v)
+		for i in range(0,count-2,3):
+			var a: Vector3=vertices[indices[i] if indexed else i]
+			var b: Vector3=vertices[indices[i+1] if indexed else i+1]
+			var c: Vector3=vertices[indices[i+2] if indexed else i+2]
+			area+=(b-a).cross(c-a).length()*0.5
+	var result:={"area":area,"bounds":bounds,"triangles":triangles}
+	measures[key]=result
+	return result
