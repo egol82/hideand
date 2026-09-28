@@ -10,7 +10,8 @@ func run() -> void:
 	video = "--video" in OS.get_cmdline_user_args()
 	root.size = Vector2i(1280,720)
 	DirAccess.make_dir_recursive_absolute("res://ci-artifacts/sync_frames")
-	game = Scene.instantiate(); root.add_child(game); game.automated = true
+	var selected: PackedScene = load("res://scenes/phase10.tscn") if "--studio" in OS.get_cmdline_user_args() else Scene
+	game = selected.instantiate(); root.add_child(game); game.automated = true
 	await process_frame; await process_frame
 	game.set_process(false)
 	for id in ["sugar_market","starlight_arcade","pocket_station"]:

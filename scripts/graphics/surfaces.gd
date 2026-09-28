@@ -7,6 +7,7 @@ static func make(color: Color, kind: String) -> StandardMaterial3D:
 	var key := kind+color.to_html()
 	if cache.has(key): return cache[key]
 	var m := StandardMaterial3D.new()
+	m.set_meta("toy_family",kind)
 	m.albedo_color = color
 	m.roughness = {"foam":0.78,"vinyl":0.40,"wood":0.61,"fabric":0.96,"ink":0.43,"plaster":0.91,"ceramic":0.30}.get(kind,0.7)
 	m.metallic_specular = 0.25 if kind in ["foam","fabric","plaster"] else 0.36

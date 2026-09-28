@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 9 comic smash reactions; historical entries remain available.
+; Hide & Smashing — Phase 10 Toy Studio graphics; historical entries remain available.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase9_followup.tscn"
+run/main_scene="res://scenes/phase10.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 9: contact-driven comic impacts and bouncy toy reactions."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 10: soft toy materials, editable bakery art and contact-aligned smash."
 
 [display]
 window/size/viewport_width=1280
@@ -26,3 +26,6 @@ environment/defaults/default_clear_color=Color(0.10, 0.14, 0.18, 1)
 [physics]
 common/physics_ticks_per_second=60
 3d/default_gravity=18.0
+
+[editor_plugins]
+enabled=PackedStringArray("res://addons/toy_studio/plugin.cfg")
