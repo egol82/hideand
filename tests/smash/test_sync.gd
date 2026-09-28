@@ -20,7 +20,8 @@ func fresh(style: String) -> void:
 	game._process(0)
 func run() -> void:
 	root.size = Vector2i(1280,720)
-	game = Scene.instantiate(); root.add_child(game); game.automated = true
+	var selected: PackedScene = load("res://scenes/phase10.tscn") if "--studio" in OS.get_cmdline_user_args() else Scene
+	game = selected.instantiate(); root.add_child(game); game.automated = true
 	await process_frame; await process_frame
 	game.set_process(false)
 	var fx = game.get_node("SmashDirector")

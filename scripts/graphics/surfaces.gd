@@ -7,6 +7,7 @@ static func make(color: Color, kind: String) -> StandardMaterial3D:
 	var key := kind+color.to_html()
 	if cache.has(key): return cache[key]
 	var m := StandardMaterial3D.new()
+	m.set_meta("toy_family",kind)
 	m.albedo_color = color
 	m.roughness = {"foam":0.78,"vinyl":0.40,"wood":0.61,"fabric":0.96,"ink":0.43,"plaster":0.91,"ceramic":0.30}.get(kind,0.7)
 	m.metallic_specular = 0.25 if kind in ["foam","fabric","plaster"] else 0.36
@@ -43,7 +44,7 @@ static func textures(kind: String) -> Array:
 			var dx := (height_at(x+1,y,kind)-height_at(x-1,y,kind))*1.9
 			var dy := (height_at(x,y+1,kind)-height_at(x,y-1,kind))*1.9
 			var n := Vector3(-dx,-dy,1).normalized()
-			normal.set_pixel(x,y,Color(n.x*0.5+0.5,n.y*0.5+0.5,n.z*0.5+0.5))
+			normal.set_pixel(x,y,Color(n.x*0.5+0.5,n.y*0.5+0.5))
 	albedo.generate_mipmaps(); normal.generate_mipmaps()
 	var result := [ImageTexture.create_from_image(albedo),ImageTexture.create_from_image(normal)]
 	tiles[kind] = result

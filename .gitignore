@@ -17,3 +17,5 @@ ci-artifacts/*
 *.gd.uid
 
 *.uid
+
+assets/renderlab/generated/

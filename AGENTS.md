@@ -1,8 +1,10 @@
-# Hide & Smashing — Phase 9 smash-presentation rules
+# Hide & Smashing — Phase 10 Toy Studio rules
+
+Read docs/PHASE10.md and docs/PHASE10_TEST_STATUS.md first. The later user request for simple round paws overrides the old anatomical-hand direction.
 
 Read docs/CUTE_SYNC.md, docs/CUTE_SYNC_TEST_STATUS.md, README.md, docs/PHASE9.md, docs/PHASE9_REFERENCE.md, docs/PHASE9_TEST_STATUS.md and docs/ASTRA_START.md; retain the map and grip invariants below.
 
-- Default entry: scenes/phase9_followup.tscn with GraphicsDirector, GripPresentation and SmashDirector. scenes/phase5.tscn remains available. It reuses improved scripts/phase4 controllers rather than adding another inheritance layer. On this branch phase4.tscn shares that controller; the old Phase 4 snapshot remains in its branch. Preserve Phase 1–3 source, LICENSE and user changes.
+- Default entry: scenes/phase10.tscn with GraphicsDirector, GripPresentation, SmashDirector and ToyStudio. scenes/phase5.tscn remains available. It reuses improved scripts/phase4 controllers rather than adding another inheritance layer. On this branch phase4.tscn shares that controller; the old Phase 4 snapshot remains in its branch. Preserve Phase 1–3 source, LICENSE and user changes.
 - Godot Standard/GDScript and original drawn vectors stay. No paid assets, runtime AI replacement, online telemetry, billing, credentials or engine migration.
 - FacingRoot is rotation-only. Cosmetic body squash/bob/blink MUST NOT change weapon geometry, contact samples, reach, HP, clocks or score. AttackSpec remains shared between display and authority.
 - Contact events keep attacker/target/outcome identity. Scores and phase transitions remain rule-owned. Field mode remains in-place; unrelated survivors stay active.
@@ -53,3 +55,13 @@ Read docs/CUTE_SYNC.md, docs/CUTE_SYNC_TEST_STATUS.md, README.md, docs/PHASE9.md
 - Contact metadata is presentation-only; do not change predicates, samples, reach, damage or clocks when adjusting visual placement.
 - Run tools/test_sync.py in addition to legacy suites. --matches exercises twelve full matches; captures use real input and collision, not injected effect packets.
 - Do not claim entire-swing perfect sync from a single selected sample projection assertion.
+
+## Toy Studio constraints
+- Default scenes/phase10.tscn composes existing GraphicsDirector/GripPresentation/SmashDirector plus ToyStudio. No authority code changes for art.
+- A must restore original materials/lights; map switches must not accumulate exposure or allocate a new Sky each frame. Shared original sources stay immutable.
+- C keeps world-light attenuation/depth and no see-through emission/displacement. Ink and transparent hit effects stay recognizable. View-only materials stay independent.
+- New representative Sugar Market art cannot change collision, hideout IDs, navigation or hearing zones. All six fingerprints remain identical.
+- Native saved art scenes are editable. UV2 export is separate from an actual editor-created LightmapGIData result. Never label an unbaked export as baked illumination.
+- Optional editor bake has independent success/failure JSON; a workflow continue-on-error does NOT make the bake successful. Do not apply its scene to gameplay without separate integration tests.
+- Run tools/test_studio.py alongside all prior runners. Test_sync --studio keeps all original94 assertions on the new scene. Capture actual A/B/C and input-driven hits; avoid retouched evidence.
+- No bundled fonts, engine caches, raw frame dumps or generated static maps in source; authored saved sugar_island.scn is an intentional binary resource.

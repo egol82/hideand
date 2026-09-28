@@ -1,0 +1,163 @@
+name: Toy Studio graphics and authoring
+on:
+  push:
+    branches: ['phase10/toy-studio']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: studio-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 8
+    outputs:
+      commit: ${{ steps.native.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-verified official Godot 4.4.1
+        shell: python
+        run: |
+          import hashlib, os, pathlib, urllib.request, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'studio-godot'
+          root.mkdir(exist_ok=True)
+          platform = 'win64.exe' if os.name == 'nt' else 'linux.x86_64'
+          name = 'Godot_v4.4.1-stable_' + platform + '.zip'
+          base = 'https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+          archive = root / name
+          urllib.request.urlretrieve(base + name, archive)
+          manifest = urllib.request.urlopen(base + 'SHA512-SUMS.txt').read().decode()
+          expected = [line.split()[0] for line in manifest.splitlines() if line.endswith(name)]
+          assert len(expected) == 1 and hashlib.sha512(archive.read_bytes()).hexdigest() == expected[0].lower()
+          with zipfile.ZipFile(archive) as z: z.extractall(root)
+          exe = next(root.glob('*_console.exe' if os.name == 'nt' else '*.x86_64'))
+          if os.name != 'nt': exe.chmod(0o755)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as f: f.write('GODOT_BIN=' + str(exe) + '\n')
+      - name: Generate and save native editable asset on this feature branch only
+        id: native
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/phase10/toy-studio"
+          before="$(git rev-parse HEAD)"
+          stamp="$(sha256sum scripts/renderlab/patisserie.gd scripts/renderlab/shapes.gd tools/build_studio_asset.gd scripts/graphics/surfaces.gd scripts/phase4/art.gd | sha256sum | cut -d' ' -f1)"
+          if ! test -f scenes/art/sugar_island.scn || ! test -f scenes/art/sugar_island.sha256 || ! grep -qx "$stamp" scenes/art/sugar_island.sha256; then
+            mkdir -p scenes/art ci-artifacts
+            "$GODOT_BIN" --headless --path . --script res://tools/build_studio_asset.gd 2>&1 | tee ci-artifacts/asset-build.log
+            grep -q STUDIO_ASSET_SAVED ci-artifacts/asset-build.log
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|^ERROR:|FAIL:' ci-artifacts/asset-build.log; then exit 1; fi
+            echo "$stamp" > scenes/art/sugar_island.sha256
+            test "$(git ls-remote origin "$GITHUB_REF" | cut -f1)" = "$before"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add scenes/art/sugar_island.scn scenes/art/sugar_island.sha256
+            git commit -m 'build: save generated editable Sugar Market asset [skip ci]'
+            git push origin "HEAD:$GITHUB_REF"
+          fi
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  verify:
+    needs: assets
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.assets.outputs.commit }}
+      - name: Install checksum-verified official Godot 4.4.1
+        shell: python
+        run: |
+          import hashlib, os, pathlib, urllib.request, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'studio-godot'
+          root.mkdir(exist_ok=True)
+          platform = 'win64.exe' if os.name == 'nt' else 'linux.x86_64'
+          name = 'Godot_v4.4.1-stable_' + platform + '.zip'
+          base = 'https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+          archive = root / name
+          urllib.request.urlretrieve(base + name, archive)
+          manifest = urllib.request.urlopen(base + 'SHA512-SUMS.txt').read().decode()
+          expected = [line.split()[0] for line in manifest.splitlines() if line.endswith(name)]
+          assert len(expected) == 1 and hashlib.sha512(archive.read_bytes()).hexdigest() == expected[0].lower()
+          with zipfile.ZipFile(archive) as z: z.extractall(root)
+          exe = next(root.glob('*_console.exe' if os.name == 'nt' else '*.x86_64'))
+          if os.name != 'nt': exe.chmod(0o755)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as f: f.write('GODOT_BIN=' + str(exe) + '\n')
+      - name: All previous engine suites on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-artifacts
+          bash tools/test.sh 2>&1 | tee ci-artifacts/previous-core.log
+          bash tools/test_phase3.sh 2>&1 | tee ci-artifacts/previous-firstperson.log
+          for runner in phase4 quality graphics maps grip smash sync; do
+            python "tools/test_${runner}.py" 2>&1 | tee "ci-artifacts/previous-${runner}.log"
+          done
+      - name: All previous engine suites on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ci-artifacts | Out-Null
+          & ./tools/test.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/previous-core.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./tools/test_phase3.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/previous-firstperson.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($runner in @('phase4','quality','graphics','maps','grip','smash','sync')) {
+            python "tools/test_$runner.py" *>&1 | Tee-Object "ci-artifacts/previous-$runner.log"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: New invariants, unchanged hit sync, UV2 export and twelve matches
+        run: python tools/test_studio.py --export --matches
+      - name: Real A/B/C screenshots and actual-contact video
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk xvfb ffmpeg mesa-vulkan-drivers
+          timeout 600s xvfb-run -a python tools/test_studio.py --capture --contacts 2>&1 | tee ci-artifacts/studio-render-suite.log
+          ffmpeg -y -loglevel error -framerate 30 -i ci-artifacts/sync_frames/%04d.png -c:v libx264 -pix_fmt yuv420p -crf 22 ci-artifacts/studio_actual_contacts.mp4
+          rm -rf ci-artifacts/sync_frames
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase10_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/studio-source-commit.txt
+      - name: Experimental real editor LightmapGI bake (reported separately)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          export VK_ICD_FILENAMES="$(find /usr/share/vulkan/icd.d -name '*lvp*.json' | head -1)"
+          test -n "$VK_ICD_FILENAMES"
+          timeout 540s xvfb-run -a "$GODOT_BIN" --path . --editor --audio-driver Dummy --rendering-method forward_plus -- --studio-bake 2>&1 | tee ci-artifacts/studio-editor-bake.log
+          grep -q STUDIO_GI_BAKE_PASS ci-artifacts/studio-editor-bake.log
+          timeout 180s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method forward_plus --script res://tests/renderlab/capture_bake.gd 2>&1 | tee ci-artifacts/studio-baked-render.log
+          grep -q STUDIO_GI_RENDER_PASS ci-artifacts/studio-baked-render.log
+      - name: Package editable authoring output with explicit bake status
+        if: runner.os == 'Linux' && always()
+        shell: python
+        run: |
+          import json, pathlib, zipfile
+          out=pathlib.Path('ci-artifacts'); out.mkdir(exist_ok=True)
+          status=out/'studio-bake.json'
+          if not status.exists(): status.write_text(json.dumps({'baked':False,'reason':'Bake step did not produce a completion record; inspect logs.'},indent=2))
+          with zipfile.ZipFile(out/'ToyStudio_Authoring.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for p in pathlib.Path('assets/renderlab/generated').glob('*'):
+                  if p.is_file(): z.write(p,p.as_posix())
+              z.write(status,'studio-bake.json')
+      - name: Save exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: toy-studio-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
