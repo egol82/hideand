@@ -12,6 +12,10 @@ const Contact4 = preload("res://scripts/phase4/combat.gd")
 const Sound4 = preload("res://scripts/phase4/sound_bank.gd")
 const Attack4 = preload("res://scripts/phase4/attack_spec.gd")
 const Metrics4 = preload("res://scripts/phase4/telemetry.gd")
+signal smash_contact(event: Dictionary)
+signal smash_frame(delta: float)
+signal smash_reset
+var smash_presentation := false
 var metrics = Metrics4.new()
 var hurt_feedback := 0.0
 var block_feedback := 0.0
@@ -314,6 +318,7 @@ func _process(delta: float) -> void:
 	local_notice_time = maxf(0,local_notice_time-dt)
 	ui.refresh(rules)
 	_sync_mouse()
+	smash_frame.emit(dt)
 
 func view_target() -> int:
 	if not rules.alive[0]: return rules.seeker
@@ -430,8 +435,14 @@ func _consume_event(e: Dictionary) -> void:
 		"blocked": block_feedback = 0.18
 	if feedback in ["hit","hurt","blocked"]: rig.feedback(feedback)
 	if e.outcome in ["hit","blocked"]:
-		audio.play_at(e.outcome,e.world_point)
-		if not preferences.reduced_motion: effects.burst(e.world_point,e.outcome == "blocked")
+		if smash_presentation:
+			var presented := e.duplicate(true)
+			presented["handling"] = fighters[e.attacker_id].handling
+			presented["finisher"] = e.outcome == "hit" and e.target_id >= 0 and rules.hp[e.target_id] <= 1
+			smash_contact.emit(presented)
+		else:
+			audio.play_at(e.outcome,e.world_point)
+			if not preferences.reduced_motion: effects.burst(e.world_point,e.outcome == "blocked")
 	metrics.record("contact",{"actor":e.attacker_id,"target":e.target_id,"outcome":e.outcome})
 
 func _duel_resolved(hider: int, captured: bool) -> void:
@@ -450,7 +461,7 @@ func _duel_resolved(hider: int, captured: bool) -> void:
 		rig.yaw = pre_duel_angles.x
 		rig.pitch = pre_duel_angles.y
 	if 0 in [rules.seeker,hider]: ui.notify("CAUGHT!" if captured else "ESCAPED! FIND NEW COVER",0.9)
-	audio.play_at("escape",fighters[hider].position)
+	if not captured or not smash_presentation: audio.play_at("escape",fighters[hider].position)
 	metrics.record("duel_end",{"actor":hider,"outcome":"captured" if captured else "escaped"})
 
 func _update_actor_events(id: int) -> void:
@@ -847,6 +858,7 @@ func _exit_tree() -> void:
 	super._exit_tree()
 
 func _clear_feedback() -> void:
+	smash_reset.emit()
 	hit_feedback = 0
 	hurt_feedback = 0
 	block_feedback = 0
