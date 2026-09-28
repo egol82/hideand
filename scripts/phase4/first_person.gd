@@ -2,6 +2,8 @@ extends "res://scripts/phase3/first_person.gd"
 const Art4 = preload("res://scripts/phase4/art.gd")
 const Form4 = preload("res://scripts/phase4/weapon_form.gd")
 const Attack4 = preload("res://scripts/phase4/attack_spec.gd")
+const GripRig = preload("res://scripts/viewmodel/grip_rig.gd")
+var grip_rig
 var hand_sway := 0.65
 var head_bob := 0.35
 var feedback_strength := 0.65
@@ -41,6 +43,7 @@ func follow(actor, delta: float, aim_locked: bool, visible_hands: bool) -> void:
 	var recoil := 0.0 if reduced_motion else sin(kick/0.14*PI)*0.055*feedback_strength
 	hand_root.position = Vector3(0.39-0.43*sweep,-0.34-0.19*wall_retract+0.04*sweep,-0.80+wall_retract*0.25+recoil)+bob
 	hand_root.rotation = Vector3(-0.55*wall_retract,0.22*sweep,0.9*sweep)
+	if is_instance_valid(grip_rig): grip_rig.update_pose(hand_root,sweep)
 	if wall_retract > 0.96: hand_root.visible = false
 
 func feedback(kind: String) -> void:
@@ -58,8 +61,9 @@ func _rebuild(actor) -> void:
 	view_weapon = Form4.build(actor.weapon_data)
 	view_weapon.scale = Vector3.ONE*minf(0.27,0.44/maxf(0.1,actor.weapon_data.reach()))
 	mount.add_child(view_weapon)
-	Art4.mitten(hand_root,Vector3(0,0,0),actor.tint)
-	Art4.mitten(hand_root,Vector3(-0.17,-0.12,0.06),actor.tint,true).rotation.z = -0.27
+	grip_rig = GripRig.new()
+	hand_root.add_child(grip_rig)
+	grip_rig.configure(actor.weapon_data,mount.basis,view_weapon.scale.x,actor.tint)
 	_layers(hand_root)
 
 func _wall_amount() -> float:

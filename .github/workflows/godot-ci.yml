@@ -1,7 +1,7 @@
 name: Godot validation
 on:
   push:
-    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**', 'phase5/**', 'phase6/**', 'phase7/**']
+    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**', 'phase5/**', 'phase6/**', 'phase7/**', 'phase8/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -57,6 +57,20 @@ jobs:
         run: python3 tools/test_graphics.py
       - name: New map connectivity, sound routes and six complete matches
         run: python3 tools/test_maps.py
+      - name: Natural grip and presentation-isolation regressions
+        run: python3 tools/test_grip.py
+      - name: Render natural grip in all new maps and attack stages
+        if: matrix.godot == '4.7.2'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          timeout 280s xvfb-run -a python3 tools/test_grip.py --capture 2>&1 | tee ci-artifacts/grip-capture-suite.log
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase8_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/phase8-source-commit.txt
       - name: Render Korean and English playability screens
         if: matrix.godot == '4.7.2'
         shell: bash
@@ -200,6 +214,11 @@ jobs:
         shell: pwsh
         run: |
           python tools/test_maps.py *>&1 | Tee-Object ci-artifacts/windows-map-pack.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Natural grip and presentation-isolation regressions on Windows
+        shell: pwsh
+        run: |
+          python tools/test_grip.py *>&1 | Tee-Object ci-artifacts/windows-grip-tests.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Save Windows evidence
         if: always()
