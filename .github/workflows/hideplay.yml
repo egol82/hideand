@@ -1,0 +1,91 @@
+name: Hideaway Manor and hide-search rules
+on:
+  push:
+    branches: ['phase11/hide-and-seek']
+    paths-ignore: ['docs/**', '**.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hideplay-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-verified official Godot 4.4.1
+        shell: python
+        run: |
+          import hashlib, os, pathlib, urllib.request, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'hideplay-godot'
+          root.mkdir(exist_ok=True)
+          platform = 'win64.exe' if os.name == 'nt' else 'linux.x86_64'
+          name = 'Godot_v4.4.1-stable_' + platform + '.zip'
+          base = 'https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+          archive = root / name
+          urllib.request.urlretrieve(base + name, archive)
+          manifest = urllib.request.urlopen(base + 'SHA512-SUMS.txt').read().decode()
+          expected = [line.split()[0] for line in manifest.splitlines() if line.endswith(name)]
+          assert len(expected) == 1 and hashlib.sha512(archive.read_bytes()).hexdigest() == expected[0].lower()
+          with zipfile.ZipFile(archive) as z: z.extractall(root)
+          exe = next(root.glob('*_console.exe' if os.name == 'nt' else '*.x86_64'))
+          if os.name != 'nt': exe.chmod(0o755)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as f: f.write('GODOT_BIN=' + str(exe) + '\n')
+          pathlib.Path('ci-artifacts').mkdir(exist_ok=True)
+      - name: Existing core and first-person suites on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/test.sh 2>&1 | tee ci-artifacts/hideplay-legacy-core.log
+          bash tools/test_phase3.sh 2>&1 | tee ci-artifacts/hideplay-legacy-firstperson.log
+      - name: Existing core and first-person suites on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./tools/test.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/hideplay-legacy-core.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./tools/test_phase3.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/hideplay-legacy-firstperson.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve all previous Python-driven engine suites
+        shell: python
+        run: |
+          import pathlib, subprocess, sys
+          for suite in ['phase4','quality','graphics','maps','grip','smash','sync','studio']:
+              p = subprocess.run([sys.executable,'tools/test_'+suite+'.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', timeout=240)
+              pathlib.Path('ci-artifacts/hideplay-legacy-'+suite+'.log').write_text(p.stdout,encoding='utf-8')
+              print(p.stdout,flush=True)
+              if p.returncode: raise SystemExit(p.returncode)
+      - name: Actual stairs, hiding, clues, ambush and all fourteen matches
+        run: python tools/test_hideplay.py --matches
+      - name: Static hygiene
+        run: python tools/verify_project.py
+      - name: Actual rendered states and physical staircase traversal
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk xvfb ffmpeg
+          timeout 650s xvfb-run -a python tools/test_hideplay.py --capture --video 2>&1 | tee ci-artifacts/hideplay-capture-suite.log
+          ffmpeg -y -loglevel error -framerate 30 -i ci-artifacts/hideplay_frames/frame_%04d.png -c:v libx264 -pix_fmt yuv420p -crf 22 ci-artifacts/hideplay_stairs.mp4
+          rm -rf ci-artifacts/hideplay_frames
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase11_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/hideplay-source-commit.txt
+      - name: Save evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hideplay-${{ runner.os }}
+          path: |
+            ci-artifacts/
+            docs/offline_check_report.json
+          retention-days: 7
