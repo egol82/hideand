@@ -4,7 +4,7 @@ config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase9.tscn"
+run/main_scene="res://scenes/phase9_followup.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 9: contact-driven comic impacts and bouncy toy reactions."
 

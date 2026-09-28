@@ -1,9 +1,13 @@
-# Astra — Phase 9 handoff
+# Astra — 둥근 손·큰 무기·타격 싱크 인계
 
-`phase9/smash-reactions`에서 이어서 작업한다. `AGENTS.md`, `docs/PHASE9.md`, `docs/PHASE9_REFERENCE.md`, `docs/PHASE9_TEST_STATUS.md`부터 읽는다.
+`phase9/followup-cute-grip-sync` 위에서 작업한다. `AGENTS.md`, `docs/CUTE_SYNC.md`, `docs/CUTE_SYNC_TEST_STATUS.md`를 먼저 읽는다. 기본 씬은 `scenes/phase9_followup.tscn`이다.
 
-기본 실행 씬은 `scenes/phase9.tscn`. 새로운 게임을 다시 만들지 않는다. SmashDirector는 접촉 사실을 받아 별·코믹 문자·인형 외형·짧은 퇴장·효과음을 표현하는 observer다. 원본 무기/손 그립/공격 판정/점수/타이머는 고치지 않는다.
-
-모든 기존 도구와 `python tools/test_smash.py --matches`를 실행한다. 실제 캡처는 디스플레이나 Xvfb에서 `python tools/test_smash.py --capture --video`. 이 캡처는 재현 가능한 접촉 fixture이며 사람 조작 영상이 아니다. 진짜 입력/충돌→연출 경로는 별도 검사한다.
-
-다음 점검은 실제 사람의 연속 타격 피로·중첩 효과 가독성·오디오·벽 가까운 표현·복잡한 무기 접촉이다. 음소거/동작 줄이기로 판정이나 봇 청각이 달라지면 안 된다. 숨은 캐릭터의 좌표를 이펙트가 따라가면 안 된다. 정확한 커밋과 실행 결과만 보고한다. LICENSE/기존 브랜치 보존, 승인 없는 병합·강제 푸시 금지.
+1. 이전 단계의 게임을 다시 생성하지 않는다. Phase 9의 6맵·모드·저장·입력을 유지한다.
+2. 새 손은 실제 곡면 메시이며, 별도의 이미지 오버레이가 아니다. 원래 그린 선·그립·공격 범위는 바꾸지 않는다.
+3. 크게 보이는 무기는 카메라 표현용이다. 시각 보정을 실제 사거리/피해로 환산하지 않는다.
+4. 접촉 정보는 실제 판정이 생산한다. 보정 프레임에서 선택된 표본이 실제 접촉 화면 좌표와 맞도록 한다. 피해 없는 가짜 이벤트로 검증을 대체하지 않는다.
+5. 다음 프레임까지 사건을 보류하고 숨은/리셋된 상대 위치를 새로 조회하지 않는다. 공개 접촉 스냅샷과 즉시 반응을 유지한다.
+6. 기존 test.sh/test_phase3.sh/test_phase4.py/test_quality.py/test_graphics.py/test_maps.py/test_grip.py/test_smash.py와 새 test_sync.py를 실행한다.
+7. 새 `--matches`는 실제 새 진입점의 12경기를 확인한다. 캡처는 자동 연습형 물리 시나리오이지 수동 플레이 영상이 아니다.
+8. 관통·시야 가림·움직이는 목표·벽 접촉과 다양한 사용자 그림은 추가 플레이 검증 대상이다. 전체 스윙 싱크/오디오 장치 지연을 테스트 없이 보장하지 않는다.
+9. 커밋/명령/실제 종료 마커/로그/화면을 보고한다. 승인 없는 병합, force push, LICENSE 변경, 엔진/폰트/캐시/개인 저장 업로드를 하지 않는다.

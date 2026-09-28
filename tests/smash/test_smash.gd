@@ -29,7 +29,8 @@ func next_hit(handling: String="balanced", target: int=1, finish: bool=false) ->
 func advance(t: float) -> void:
 	game._process(t)
 func run() -> void:
-	game=Scene.instantiate(); root.add_child(game); game.automated=true
+	var selected: PackedScene = preload("res://scenes/phase9_followup.tscn") if "--sync-followup" in OS.get_cmdline_user_args() else Scene
+	game=selected.instantiate(); root.add_child(game); game.automated=true
 	await process_frame; await process_frame
 	director=game.get_node("SmashDirector")
 	game.start_practice(); game.accept_drawing()

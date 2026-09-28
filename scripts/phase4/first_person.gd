@@ -13,6 +13,18 @@ var last_actor := -1
 var last_revision := -1
 var display_progress := 0.0
 var rebuild_count := 0
+# Opt-in only: earlier test scenes retain their original viewmodel.
+var cute_sync := false
+var contact_pose := Transform3D.IDENTITY
+var contact_age := 1.0
+var contact_fresh := false
+var contact_actor := -1
+var contact_attack := -1
+var contact_point := Vector3.ZERO
+var contact_local := Vector3.ZERO
+var contact_rendered := false
+var display_anchor := Vector3.ZERO
+const CONTACT_LIFE := 0.055
 
 func follow(actor, delta: float, aim_locked: bool, visible_hands: bool) -> void:
 	var fraction := Engine.get_physics_interpolation_fraction()
@@ -43,6 +55,11 @@ func follow(actor, delta: float, aim_locked: bool, visible_hands: bool) -> void:
 	var recoil := 0.0 if reduced_motion else sin(kick/0.14*PI)*0.055*feedback_strength
 	hand_root.position = Vector3(0.39-0.43*sweep,-0.34-0.19*wall_retract+0.04*sweep,-0.80+wall_retract*0.25+recoil)+bob
 	hand_root.rotation = Vector3(-0.55*wall_retract,0.22*sweep,0.9*sweep)
+	if cute_sync:
+		# Larger rest silhouette; during the active swing use projected authority geometry,
+		# not a second unrelated screen-space swing curve.
+		hand_root.position += Vector3(0.025,-0.045,-0.075)
+		_align_attack(actor,delta)
 	if is_instance_valid(grip_rig): grip_rig.update_pose(hand_root,sweep)
 	if wall_retract > 0.96: hand_root.visible = false
 
@@ -59,9 +76,15 @@ func _rebuild(actor) -> void:
 	mount.rotation_degrees = Vector3(-90,0,-12)
 	hand_root.add_child(mount)
 	view_weapon = Form4.build(actor.weapon_data)
-	view_weapon.scale = Vector3.ONE*minf(0.27,0.44/maxf(0.1,actor.weapon_data.reach()))
+	var display_scale := minf(0.27,0.44/maxf(0.1,actor.weapon_data.reach()))
+	if cute_sync: display_scale = clampf(0.68/maxf(0.1,actor.weapon_data.reach()),0.32,0.46)
+	view_weapon.scale = Vector3.ONE*display_scale
 	mount.add_child(view_weapon)
-	grip_rig = GripRig.new()
+	display_anchor = Vector3.ZERO
+	for point in actor.hit_samples:
+		if point.length_squared() > display_anchor.length_squared(): display_anchor = point
+	grip_rig = preload("res://scripts/viewmodel/cute_grip.gd").new() if cute_sync else GripRig.new()
+	clear_contact()
 	hand_root.add_child(grip_rig)
 	grip_rig.configure(actor.weapon_data,mount.basis,view_weapon.scale.x,actor.tint)
 	_layers(hand_root)
@@ -75,3 +98,64 @@ func _wall_amount() -> float:
 		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye,target,1))
 		if not hit.is_empty(): closest = minf(closest,eye.distance_to(hit.position))
 	return clampf((0.96-closest)/0.73,0,1)
+
+func clear_contact() -> void:
+	contact_age = 1.0
+	contact_fresh = false
+	contact_actor = -1
+	contact_rendered = false
+
+func register_contact(event: Dictionary, actor) -> void:
+	if not cute_sync or actor.player_id != subject_id: return
+	if event.get("outcome") not in ["hit","blocked"]: return
+	if not event.get("weapon_transform") is Transform3D or not event.get("weapon_local_point") is Vector3: return
+	var pose: Transform3D = event.weapon_transform
+	var point: Vector3 = event.weapon_local_point
+	var at: Vector3 = event.world_point
+	if not pose.is_finite() or absf(pose.basis.determinant()) < 0.00001 or not at.is_finite() or not point.is_finite(): return
+	# Swept collision resolves a contact between physics samples. Pin its selected
+	# drawing point to that observed contact only in the cosmetic snapshot.
+	pose.origin += at-pose*point
+	contact_pose = pose
+	contact_point = at
+	contact_local = point
+	contact_actor = actor.get_instance_id()
+	contact_attack = actor.attack_sequence
+	contact_age = 0.0
+	contact_fresh = true
+	contact_rendered = false
+
+func _align_attack(actor, delta: float) -> void:
+	subject_id = actor.player_id
+	var s := Attack4.spec(actor.handling)
+	var weight := 0.0
+	if actor.elapsed >= 0:
+		if actor.elapsed < s.windup: weight = smoothstep(0.0,s.windup,actor.elapsed)
+		elif actor.elapsed <= s.windup+s.active: weight = 1.0
+		else: weight = 1.0-smoothstep(0.0,s.recovery,actor.elapsed-s.windup-s.active)
+	var sampled: Transform3D = actor.weapon.global_transform
+	var same_contact: bool = actor.get_instance_id() == contact_actor and actor.attack_sequence == contact_attack and contact_age < CONTACT_LIFE
+	if same_contact:
+		if not contact_fresh: contact_age = minf(CONTACT_LIFE,contact_age+maxf(0,delta))
+		contact_fresh = false
+		var blend := smoothstep(0.0,CONTACT_LIFE,contact_age)
+		sampled = contact_pose.interpolate_with(sampled,blend)
+		weight = maxf(weight,1.0-blend)
+		contact_rendered = true
+	if weight <= 0: return
+	# Project an actual drawing anchor to a safe viewmodel depth. At contact this is
+	# the exact struck sample, not an independently timed screen swing. Keeping a
+	# bounded depth prevents the enlarged prop/arms from crossing the near plane.
+	var anchor := display_anchor
+	if same_contact: anchor = contact_local.lerp(display_anchor,smoothstep(0.0,CONTACT_LIFE,contact_age))
+	var local := view.global_transform.affine_inverse()*sampled
+	var projected_anchor: Vector3 = local*anchor
+	if projected_anchor.z >= -0.05: return
+	var factor := view_weapon.scale.x
+	var depth := maxf(0.90,actor.weapon_data.reach()*factor+0.18)
+	var on_ray := projected_anchor*(depth/-projected_anchor.z)
+	local.basis = local.basis.scaled(Vector3.ONE*factor)
+	local.origin = on_ray-local.basis*anchor
+	var geometry: Transform3D = mount.transform*view_weapon.transform
+	var desired := local*geometry.affine_inverse()
+	hand_root.transform = hand_root.transform.interpolate_with(desired,weight)
