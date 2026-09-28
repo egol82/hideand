@@ -67,7 +67,8 @@ func update_pose(view_root: Node3D, sweep: float) -> void:
 	_attach_arm(left_socket,left_elbow,left_wrist,left_arm,left_cuff)
 
 func _attach_arm(socket: Vector3, elbow: Vector3, wrist: Node3D, sleeve: Node3D, cuff: Node3D) -> void:
-	var direction := (elbow-socket).normalized()
+	var offset := elbow-socket
+	var direction := offset.normalized() if offset.length_squared() > 0.00000001 else Vector3.UP
 	var cuff_at := socket+direction*0.060
 	Meshes.link(wrist,socket-direction*0.020,cuff_at+direction*0.012)
 	Meshes.link(sleeve,cuff_at,elbow)

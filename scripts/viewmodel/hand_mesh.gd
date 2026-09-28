@@ -23,16 +23,24 @@ static func tube(points: PackedVector3Array, radii: PackedFloat32Array, rounded_
 			var k := (j+1)%SIDES
 			var vertices := [rings[i][j],rings[i+1][j],rings[i][k],rings[i][k],rings[i+1][j],rings[i+1][k]]
 			var ns := [normals[i][j],normals[i+1][j],normals[i][k],normals[i][k],normals[i+1][j],normals[i+1][k]]
+			var u0 := float(j)/SIDES; var u1 := float(j+1)/SIDES
+			var v0 := float(i)/(points.size()-1); var v1 := float(i+1)/(points.size()-1)
+			var uv := [Vector2(u0,v0),Vector2(u0,v1),Vector2(u1,v0),Vector2(u1,v0),Vector2(u0,v1),Vector2(u1,v1)]
 			for q in range(6):
-				st.set_normal(ns[q]); st.set_uv(Vector2(float(j)/SIDES,float(i)/points.size())); st.add_vertex(vertices[q])
+				st.set_normal(ns[q]); st.set_uv(uv[q]); st.add_vertex(vertices[q])
 	for endpoint in [0,points.size()-1]:
 		var direction := (points[endpoint]-points[1 if endpoint==0 else endpoint-1]).normalized()
 		if rounded_caps:
 			_cap(st,points[endpoint],direction,radii[endpoint])
 		else:
 			for j in range(SIDES):
-				for point in [points[endpoint],rings[endpoint][j],rings[endpoint][(j+1)%SIDES]]:
-					st.set_normal(direction); st.set_uv(Vector2.ZERO); st.add_vertex(point)
+				var a: Vector3 = rings[endpoint][j]; var b: Vector3 = rings[endpoint][(j+1)%SIDES]
+				if (a-points[endpoint]).cross(b-points[endpoint]).dot(direction) > 0:
+					var swap := a; a = b; b = swap
+				for point in [points[endpoint],a,b]:
+					st.set_normal(direction); st.set_uv(Vector2(point.x,point.z)); st.add_vertex(point)
+	st.index()
+	st.generate_tangents()
 	return st.commit()
 
 static func _cap(st: SurfaceTool, center: Vector3, outward: Vector3, radius: float) -> void:
@@ -44,8 +52,13 @@ static func _cap(st: SurfaceTool, center: Vector3, outward: Vector3, radius: flo
 			var t := TAU*j/SIDES; var n := TAU*(j+1)/SIDES
 			var r0 := u*cos(t)+v*sin(t); var r1 := u*cos(n)+v*sin(n)
 			var ns := [outward*sin(a)+r0*cos(a),outward*sin(b)+r0*cos(b),outward*sin(a)+r1*cos(a),outward*sin(b)+r1*cos(b)]
-			for k in [0,1,2,2,1,3]:
-				st.set_normal(ns[k]); st.set_uv(Vector2.ZERO); st.add_vertex(center+ns[k]*radius)
+			for triangle in [[0,1,2],[2,1,3]]:
+				var na: Vector3 = ns[triangle[0]]; var nb: Vector3 = ns[triangle[1]]; var nc: Vector3 = ns[triangle[2]]
+				if (nb-na).cross(nc-na).dot(na+nb+nc) > 0:
+					var swap := nb; nb = nc; nc = swap
+				for normal in [na,nb,nc]:
+					st.set_normal(normal); st.set_uv(Vector2(normal.dot(u),normal.dot(v))*0.5+Vector2.ONE*0.5)
+					st.add_vertex(center+normal*radius)
 
 static func instance(parent: Node3D, mesh: Mesh, name_value: String, color: Color, kind: String = "vinyl") -> MeshInstance3D:
 	var n := MeshInstance3D.new(); n.name = name_value; n.mesh = mesh
@@ -91,12 +104,18 @@ static func sleeve(parent: Node3D, name_value: String) -> MeshInstance3D:
 		var t := float(i)/12
 		points.append(Vector3(0,t,0))
 		radii.append(lerpf(0.045,0.073,t)*(1.0+0.025*sin(t*PI*6)))
-	return instance(parent,tube(points,radii,false),name_value,Color("ede3ce"),"fabric")
+	var result := instance(parent,tube(points,radii,false),name_value,Color("ede3ce"),"fabric")
+	var fabric := result.material_override as StandardMaterial3D
+	# Local UVs keep the cloth weave attached to the sleeve as its arm frame rotates.
+	fabric.uv1_triplanar = false
+	fabric.uv1_scale = Vector3(4,14,1)
+	fabric.normal_scale = 0.14
+	return result
 
 static func link(node: Node3D, from: Vector3, to: Vector3) -> void:
 	var delta := to-from
 	var length_value := maxf(0.001,delta.length())
-	var y := delta/length_value
+	var y := delta.normalized() if delta.length_squared() > 0.00000001 else Vector3.UP
 	var helper := Vector3.FORWARD if absf(y.z) < 0.95 else Vector3.RIGHT
 	var x := y.cross(helper).normalized(); var z := x.cross(y).normalized()
 	node.transform = Transform3D(Basis(x,y*length_value,z),from)

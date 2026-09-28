@@ -4,6 +4,8 @@ const Data = preload("res://scripts/weapon_data.gd")
 const EPS := 0.00001
 
 static func solve(data, drawing_basis: Basis, display_scale: float) -> Dictionary:
+	if not is_finite(display_scale) or display_scale <= 0.0 or not drawing_basis.is_finite() or absf(drawing_basis.determinant()) < EPS:
+		return invalid_fit()
 	var anchor := Vector3.ZERO
 	var axis := Vector3.UP
 	var best := INF
@@ -20,7 +22,7 @@ static func solve(data, drawing_basis: Basis, display_scale: float) -> Dictionar
 			if d < best:
 				best = d; anchor = q; endpoints = [a,b]
 	if endpoints.is_empty():
-		return {"valid":false,"anchor":Vector3.ZERO,"axis":Vector3.UP,"basis":Basis.IDENTITY,"run":0.0,"radius":0.016,"main":Vector3.ZERO,"support":Vector3.ZERO,"mode":"brace"}
+		return invalid_fit()
 	# Point into the longer side of the real stroke, not an invented canonical handle.
 	axis = (endpoints[1]-anchor).normalized() if endpoints[1].distance_to(anchor) >= endpoints[0].distance_to(anchor) else (endpoints[0]-anchor).normalized()
 	if axis.length_squared() < 0.5: axis = (endpoints[1]-endpoints[0]).normalized()
@@ -52,3 +54,6 @@ static func solve(data, drawing_basis: Basis, display_scale: float) -> Dictionar
 	forward = forward.normalized()
 	var right := axis.cross(forward).normalized()
 	return {"valid":true,"anchor":anchor,"axis":axis,"basis":Basis(right,axis,forward).orthonormalized(),"run":run,"radius":radius,"main":anchor+axis*main_offset,"support":support,"mode":mode}
+
+static func invalid_fit() -> Dictionary:
+	return {"valid":false,"anchor":Vector3.ZERO,"axis":Vector3.UP,"basis":Basis.IDENTITY,"run":0.0,"radius":0.016,"main":Vector3.ZERO,"support":Vector3.ZERO,"mode":"brace"}

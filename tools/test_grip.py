@@ -17,6 +17,7 @@ def main():
             raise RuntimeError(label+' failed')
     run('grip-import', ['--headless','--editor','--import'], '')
     run('grip-tests', ['--headless','--fixed-fps','60','--quit-after','6000','--script','res://tests/viewmodel/test_grip.gd','--','--quality-test'], 'GRIP_UNIT_RESULT:')
+    run('grip-safety', ['--headless','--fixed-fps','60','--quit-after','1000','--script','res://tests/viewmodel/test_grip_safety.gd'], 'GRIP_SAFETY_RESULT:')
     run('grip-entry', ['--headless','--fixed-fps','60','--quit-after','400','res://scenes/phase8.tscn','--','--phase4-smoke'], 'PHASE4_SMOKE_READY')
     if a.capture:
         run('grip-render', ['--rendering-method','gl_compatibility','--fixed-fps','60','--quit-after','6000','--script','res://tests/viewmodel/capture.gd','--','--quality-test'], 'GRIP_CAPTURE_PASS',240)
