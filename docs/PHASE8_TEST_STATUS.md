@@ -1,18 +1,57 @@
-# Phase 8 verification status
+# Phase 8 — verified grip implementation
 
-2026-09-28. Local official Godot 4.4.1.stable.official.49a5bc7b6 on Linux. The engine ZIP SHA512 was compared with the official manifest before extraction.
+Verified 2026-09-28. Game/test source commit: `a0371312fda8c41c5874a65486fc5d03742d6ad8`.
 
-## Observed local checks
+CI: https://github.com/egol82/hideand/actions/runs/36366177488
 
-- New hand-fit and cosmetic-isolation tests: `GRIP_UNIT_RESULT: 198 checks, 0 failures`.
-- New actual scene entry: `PHASE4_SMOKE_READY` (the shared controller marker, not a fabricated Phase 8 marker).
-- Actual software-OpenGL capture: `GRIP_CAPTURE_PASS`, three map idle views, nine attack-stage views, a long-shaft and a sideways drawing (14 PNGs).
-- An initial aggregate capture call exceeded its tool wait window; the subprocess completed and the required final capture/suite markers were subsequently checked. No incomplete run is counted as passing.
+This follow-up updates evidence and the regenerated static-check report only. New gameplay or test changes need their own execution evidence.
 
-All original runners completed locally with zero assertion failures: 52 + 115 + 27 + 259 + 237 + 238 + 78 + 605 = 1,611 preserved assertions. Together with 198 new checks this is 1,809 individual assertions, not independent human scenarios. FIELD/CLASSIC matches on all six maps also completed four rounds and matched the earlier fixed-seed results. Remote Windows/Linux CI is pending the exact published commit; upload alone is not engine evidence.
+## Actual execution environments
 
-## Interpretation
+- Local Linux / official Godot 4.4.1.stable.official.49a5bc7b6: prior suites, 198 grip assertions, new scene initialization and real software-OpenGL captures passed. Engine archive SHA512 was verified against its official manifest before extraction.
+- GitHub Linux / Godot 4.4.1: original and new engine suites passed.
+- GitHub Linux / Godot 4.7.2: original/new engine suites and real capture steps passed.
+- GitHub Windows headless / Godot 4.7.2: original and new engine suites passed. The downloaded Windows log explicitly records `GRIP_UNIT_RESULT: 198 checks, 0 failures`.
 
-The approved generated images remain visual references only. Captures are actual reproducible Godot scenes, staged rather than manual playthroughs. Linux Xvfb/Mesa uses software OpenGL and Dummy audio; Windows headless cannot establish Windows GPU/FPS or real audio quality. Old ObjectDB/unsupported V-Sync warnings remain; no warning-free claim is made.
+## Completion markers
 
-Contact stability tests assert transforms and shape invariants. They do not prove anatomical perfection or zero clipping for every possible user drawing. No original weapon geometry or authority code is deliberately changed. Source readback and actual CI references must accompany publication.
+```text
+PHASE1_UNIT_RESULT: 52 checks, 0 failures
+PHASE2_UNIT_RESULT: 115 checks, 0 failures
+PHASE2_INTERACTION_RESULT: 27 checks, 0 failures
+PHASE3_UNIT_RESULT: 259 checks, 0 failures
+PHASE4_UNIT_RESULT: 237 checks, 0 failures
+QUALITY_UNIT_RESULT: 238 checks, 0 failures
+GRAPHICS_UNIT_RESULT: 78 checks, 0 failures
+MAP_PACK_UNIT_RESULT: 605 checks, 0 failures
+GRIP_UNIT_RESULT: 198 checks, 0 failures
+PHASE4_SMOKE_READY
+GRIP_CAPTURE_PASS
+GRIP_SUITE_PASS
+```
+
+Total: 1,809 individual assertions, including 110 inherited bilingual-copy presence checks. These are not 1,809 independent human-play situations. The final source-hygiene script checks 386 conditions; the checked-in intermediate report's 383 count is refreshed in this documentation-only follow-up. No engine-test total includes the static count.
+
+All inherited FIELD/CLASSIC map matches completed four rounds. Required markers, process exit status, timeouts and script-error logs are checked together. The new default scene intentionally uses the existing controller's PHASE4_SMOKE_READY marker.
+
+## What the new tests cover
+
+Eight drawings (fish, pan, hammer, connected staff, sideways, tiny, disconnected and reversed) plus empty input; original vectors, grip, contact samples and world scale; no physics in view geometry; finite bounded meshes and isolated material/layers; right/support contacts through three AttackSpec types at 30/60/120 step intervals; no per-frame node creation or revision rebuild; six actual map entries; hidden hand/spectator visibility; reduced-motion and contact feedback independent of authority clocks/transforms; upper-right control-hint clearance.
+
+The approved AI-edited screenshots were visual references only. They were not pasted over the game and are not execution evidence. Four curved fingers, opposing thumb, palm, wrist, sleeve and cuff are actual generated 3D meshes. Long real shafts use two shaft grips; short ones support the wrist. This does not add an artificial shaft or mutate the user's weapon.
+
+## Real images and source
+
+Fourteen new 1280x720 PNGs: idle views in Sugar Market, Starlight Arcade and Pocket Station; quick/balanced/heavy windup, active and recovery views staged in Pocket Station; long-shaft and sideways examples. The source snapshot in the CI artifact is `HideAndSmashing_Phase8_Source.zip` with its exact commit marker. Older game captures were also regenerated by the existing workflow.
+
+Both downloaded artifact SHA256 hashes matched GitHub's reported digest. Linux: `46a2048e16c124401a08b5eb323c67d77a9255eea2faafb76b32e871add76f61`; Windows: `2aa858e942b6a9c380819e2b2189331ae3d84c6c095332dcdcc271843fe2673a`. Source readback of all 18 intended changed files found 17 byte-identical files and only the regenerated static-count report (383 to 386) different; this follow-up reconciles that report. Game and test code matched the local verified version. LICENSE was unchanged. The final remote grip screenshot was visually inspected.
+
+An early local capture command exceeded the tool's wait window, but the subprocess completed; its final required markers were checked and the final scene was captured again. No incomplete or timed-out engine run was counted as passing.
+
+Captures are reproducible staged Godot scenes under Xvfb/Mesa software OpenGL and Dummy audio, not manual playthroughs or retouched generated art. Windows headless does not prove Windows GPU performance or real audio quality.
+
+## Boundaries
+
+The hand is stylized multi-part geometry, not a fully skinned anatomical hand/body IK solver. Extreme wide/tiny/self-crossing/off-centre drawings may still intersect fingers; stable contact transforms do not prove zero mesh penetration. Existing cosmetic weapon scale and bounded wall probes remain. New hands share the existing first-person helper on this branch, while historical snapshots remain on their original branches.
+
+No changes were made to game authority, original weapon form, hit samples, maps, scoring, timers, bindings, saves or LICENSE. No engine or font binaries, paid assets, remote API calls or secrets are included. No human comfort/fun/accessibility test, hardware FPS benchmark, real audio audition, multiplayer/Steam/release EXE or commercial-art completion is claimed. Old ObjectDB cleanup and software V-Sync warnings remain.
