@@ -24,18 +24,18 @@ func configure(data, drawing_basis: Basis, display_scale: float, color: Color) -
 	if not fit.valid: visible = false; return
 	frame = fit.basis
 	main_anchor = fit.main
-	right_hand = Meshes.curled_hand(self,fit.radius,color)
+	right_hand = _make_hand(self,fit.radius,color)
 	right_hand.transform = Transform3D(frame,main_anchor)
 	var grip_height := 0.60 if fit.mode == "pinch" else 1.0
 	right_hand.scale.y = grip_height
 	if fit.mode == "shaft":
 		support_anchor = fit.support
-		left_hand = Meshes.curled_hand(self,fit.radius,color,true)
+		left_hand = _make_hand(self,fit.radius,color,true)
 		left_hand.transform = Transform3D(frame,support_anchor)
 	else:
 		# The drawing has no lower shaft. Cup the right wrist honestly, do not invent a handle.
 		support_anchor = main_anchor+frame*Vector3(0.052,-0.123*grip_height,0.042)
-		left_hand = Meshes.curled_hand(self,0.037,color,true)
+		left_hand = _make_hand(self,0.037,color,true)
 		left_hand.transform = Transform3D(frame.rotated(frame.z,0.10),support_anchor)
 		left_hand.scale = Vector3.ONE*0.83
 	right_socket = main_anchor+frame*Vector3(fit.radius+0.070,-0.090*grip_height,0.042)
@@ -76,3 +76,6 @@ func _attach_arm(socket: Vector3, elbow: Vector3, wrist: Node3D, sleeve: Node3D,
 	var helper := Vector3.FORWARD if absf(direction.z) < 0.95 else Vector3.RIGHT
 	var x := direction.cross(helper).normalized()
 	cuff.transform = Transform3D(Basis(x,direction,x.cross(direction).normalized()),cuff_at)
+
+func _make_hand(parent: Node3D, radius: float, color: Color, left: bool = false) -> Node3D:
+	return Meshes.curled_hand(parent,radius,color,left)

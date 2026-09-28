@@ -44,10 +44,16 @@ static func contact(attacker, target, space: PhysicsDirectSpaceState3D) -> Dicti
 				if not obstruction.is_empty():
 					attacker.blocked = true
 					attacker.outcome = "blocked"
-					return event(attacker,null,obstruction.position,obstruction.normal,"blocked","wood")
+					var result := event(attacker,null,obstruction.position,obstruction.normal,"blocked","wood")
+					result["weapon_transform"] = to
+					result["weapon_local_point"] = point
+					return result
 			attacker.hit_ids[target.get_instance_id()] = true
 			attacker.outcome = "hit"
-			return event(attacker,target,at,(attacker.position-target.position).normalized(),"hit")
+			var result := event(attacker,target,at,(attacker.position-target.position).normalized(),"hit")
+			result["weapon_transform"] = to
+			result["weapon_local_point"] = point
+			return result
 	return {}
 
 static func wall_contact(attacker, space: PhysicsDirectSpaceState3D) -> Dictionary:
@@ -60,7 +66,10 @@ static func wall_contact(attacker, space: PhysicsDirectSpaceState3D) -> Dictiona
 		if not hit.is_empty():
 			attacker.blocked = true
 			attacker.outcome = "blocked"
-			return event(attacker,null,hit.position,hit.normal,"blocked","wood")
+			var result := event(attacker,null,hit.position,hit.normal,"blocked","wood")
+			result["weapon_transform"] = now
+			result["weapon_local_point"] = attacker.hit_samples[i]
+			return result
 	return {}
 
 static func viewer_feedback(e: Dictionary, viewer: int) -> String:

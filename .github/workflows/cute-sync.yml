@@ -1,0 +1,61 @@
+name: Cute grip and contact sync
+on:
+  push:
+    branches: ['phase9/followup-cute-grip-sync']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cute-sync-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-verified official Godot 4.4.1
+        shell: python
+        run: |
+          import hashlib, os, pathlib, urllib.request, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'sync-godot'
+          root.mkdir(exist_ok=True)
+          platform = 'win64.exe' if os.name == 'nt' else 'linux.x86_64'
+          name = 'Godot_v4.4.1-stable_' + platform + '.zip'
+          base = 'https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+          archive = root / name
+          urllib.request.urlretrieve(base + name, archive)
+          manifest = urllib.request.urlopen(base + 'SHA512-SUMS.txt').read().decode()
+          expected = [line.split()[0] for line in manifest.splitlines() if line.endswith(name)]
+          assert len(expected) == 1 and hashlib.sha512(archive.read_bytes()).hexdigest() == expected[0].lower()
+          with zipfile.ZipFile(archive) as z: z.extractall(root)
+          exe = next(root.glob('*_console.exe' if os.name == 'nt' else '*.x86_64'))
+          if os.name != 'nt': exe.chmod(0o755)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as f: f.write('GODOT_BIN=' + str(exe) + '\n')
+      - name: Actual input and projection checks plus twelve complete matches
+        run: python tools/test_sync.py --matches
+      - name: Capture actual-input attacks, not injected effects
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk xvfb ffmpeg
+          timeout 480s xvfb-run -a python tools/test_sync.py --capture --video 2>&1 | tee ci-artifacts/sync-render-suite.log
+          ffmpeg -y -loglevel error -framerate 30 -i ci-artifacts/sync_frames/%04d.png -c:v libx264 -pix_fmt yuv420p -crf 22 ci-artifacts/cute_sync_actual_contacts.mp4
+          rm -rf ci-artifacts/sync_frames
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_CuteSync_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/cute-sync-source-commit.txt
+      - name: Save exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cute-sync-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7

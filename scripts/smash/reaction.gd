@@ -13,6 +13,7 @@ var strength := 1.0
 var side := 1.0
 var local_direction := Vector3.BACK
 var last_kind := ""
+var immediate_impact := false
 var base_arm_rotations: Array[Vector3] = []
 
 func setup(subject) -> void:
@@ -54,7 +55,7 @@ func advance(delta: float, reduced: bool, amount: float) -> void:
 	var t:=age/life
 	if t>=1: reset(); return
 	var decay:=exp(-t*4.5)*(1-t)
-	var impact:=sin(minf(1,t*5.5)*PI)
+	var impact:=exp(-t*16.0) if immediate_impact else sin(minf(1,t*5.5)*PI)
 	var spring:=sin(t*TAU*1.6)*decay
 	var a:=strength*clampf(amount,0,1)
 	scale=Vector3(1+0.20*impact*a,1-0.20*impact*a,1+0.12*impact*a)

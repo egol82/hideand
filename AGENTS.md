@@ -1,8 +1,8 @@
 # Hide & Smashing — Phase 9 smash-presentation rules
 
-Read README.md, docs/PHASE9.md, docs/PHASE9_REFERENCE.md, docs/PHASE9_TEST_STATUS.md and docs/ASTRA_START.md; retain the map and grip invariants below.
+Read docs/CUTE_SYNC.md, docs/CUTE_SYNC_TEST_STATUS.md, README.md, docs/PHASE9.md, docs/PHASE9_REFERENCE.md, docs/PHASE9_TEST_STATUS.md and docs/ASTRA_START.md; retain the map and grip invariants below.
 
-- Default entry: scenes/phase9.tscn with GraphicsDirector, GripPresentation and SmashDirector. scenes/phase5.tscn remains available. It reuses improved scripts/phase4 controllers rather than adding another inheritance layer. On this branch phase4.tscn shares that controller; the old Phase 4 snapshot remains in its branch. Preserve Phase 1–3 source, LICENSE and user changes.
+- Default entry: scenes/phase9_followup.tscn with GraphicsDirector, GripPresentation and SmashDirector. scenes/phase5.tscn remains available. It reuses improved scripts/phase4 controllers rather than adding another inheritance layer. On this branch phase4.tscn shares that controller; the old Phase 4 snapshot remains in its branch. Preserve Phase 1–3 source, LICENSE and user changes.
 - Godot Standard/GDScript and original drawn vectors stay. No paid assets, runtime AI replacement, online telemetry, billing, credentials or engine migration.
 - FacingRoot is rotation-only. Cosmetic body squash/bob/blink MUST NOT change weapon geometry, contact samples, reach, HP, clocks or score. AttackSpec remains shared between display and authority.
 - Contact events keep attacker/target/outcome identity. Scores and phase transitions remain rule-owned. Field mode remains in-place; unrelated survivors stay active.
@@ -46,3 +46,10 @@ Read README.md, docs/PHASE9.md, docs/PHASE9_REFERENCE.md, docs/PHASE9_TEST_STATU
 - Finishing echoes use a stored public contact transform only after actual disappearance, never a hidden actor position. No duplicate active actor.
 - Keep pools, event identities and audio bounded. Reset on menu, practice/round reset; honor pause and reduced motion. No ghost or halo revealing hidden actors.
 - Run tools/test_smash.py in addition to all old suites; --matches checks the new entry on all six maps in both modes. Captures must be actual engine evidence, not generated art.
+
+## Cute-sync follow-up
+- New default opts into round paws, larger cosmetic weapon and selected-contact screen anchoring; older scenes retain their old presentation flags.
+- Never queue contacts and later query a hidden/reset target to invent an exit pose. Preserve immediate confirmed-event delivery and public snapshots.
+- Contact metadata is presentation-only; do not change predicates, samples, reach, damage or clocks when adjusting visual placement.
+- Run tools/test_sync.py in addition to legacy suites. --matches exercises twelve full matches; captures use real input and collision, not injected effect packets.
+- Do not claim entire-swing perfect sync from a single selected sample projection assertion.
