@@ -1,8 +1,8 @@
-# Hide & Smashing — Phase 8 viewmodel implementation rules
+# Hide & Smashing — Phase 9 smash-presentation rules
 
-Read README.md, docs/PHASE8.md, docs/PHASE8_TEST_STATUS.md and docs/ASTRA_START.md; retain Phase 7 map invariants.
+Read README.md, docs/PHASE9.md, docs/PHASE9_REFERENCE.md, docs/PHASE9_TEST_STATUS.md and docs/ASTRA_START.md; retain the map and grip invariants below.
 
-- Default entry: scenes/phase8.tscn with GraphicsDirector and GripPresentation. scenes/phase5.tscn remains available. It reuses improved scripts/phase4 controllers rather than adding another inheritance layer. On this branch phase4.tscn shares that controller; the old Phase 4 snapshot remains in its branch. Preserve Phase 1–3 source, LICENSE and user changes.
+- Default entry: scenes/phase9.tscn with GraphicsDirector, GripPresentation and SmashDirector. scenes/phase5.tscn remains available. It reuses improved scripts/phase4 controllers rather than adding another inheritance layer. On this branch phase4.tscn shares that controller; the old Phase 4 snapshot remains in its branch. Preserve Phase 1–3 source, LICENSE and user changes.
 - Godot Standard/GDScript and original drawn vectors stay. No paid assets, runtime AI replacement, online telemetry, billing, credentials or engine migration.
 - FacingRoot is rotation-only. Cosmetic body squash/bob/blink MUST NOT change weapon geometry, contact samples, reach, HP, clocks or score. AttackSpec remains shared between display and authority.
 - Contact events keep attacker/target/outcome identity. Scores and phase transitions remain rule-owned. Field mode remains in-place; unrelated survivors stay active.
@@ -38,3 +38,11 @@ Read README.md, docs/PHASE8.md, docs/PHASE8_TEST_STATUS.md and docs/ASTRA_START.
 - Right grip and support-wrist/shaft modes are explicit. The stylized geometry is not a universal anatomical IK guarantee.
 - New hands use VIEW_LAYER only, no physics or shared world material edits. Rebuild only on drawing/subject revision, not per frame.
 - Capture idle and attack stages in the three newer maps, long/sideways drawings, and preserve prior map/physics/storage/input tests.
+
+## Smash presentation invariants
+- Confirmed duplicated contact facts drive VFX; never reverse that relationship. Misses cannot trigger damage, stars or target reactions.
+- New effects belong to the Phase 9 observer, not attack timing or scoring. Preserve all old scenes and tests.
+- Reaction layer surrounds body_art only; authority FacingRoot and weapon_pivot stay outside. No camera/time-scale mutation.
+- Finishing echoes use a stored public contact transform only after actual disappearance, never a hidden actor position. No duplicate active actor.
+- Keep pools, event identities and audio bounded. Reset on menu, practice/round reset; honor pause and reduced motion. No ghost or halo revealing hidden actors.
+- Run tools/test_smash.py in addition to all old suites; --matches checks the new entry on all six maps in both modes. Captures must be actual engine evidence, not generated art.

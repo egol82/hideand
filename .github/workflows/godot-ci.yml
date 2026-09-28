@@ -1,7 +1,7 @@
 name: Godot validation
 on:
   push:
-    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**', 'phase5/**', 'phase6/**', 'phase7/**', 'phase8/**']
+    branches: [main, 'phase2/**', 'phase3/**', 'phase4/**', 'phase5/**', 'phase6/**', 'phase7/**', 'phase8/**', 'phase9/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -59,8 +59,24 @@ jobs:
         run: python3 tools/test_maps.py
       - name: Natural grip and presentation-isolation regressions
         run: python3 tools/test_grip.py
+      - name: Smash presentation and actual entry
+        run: python3 tools/test_smash.py --matches
+      - name: Render smash reactions and export preview
+        if: matrix.godot == '4.7.2' && startsWith(github.head_ref || github.ref_name, 'phase9/')
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk ffmpeg
+          timeout 400s xvfb-run -a python3 tools/test_smash.py --capture --video | tee ci-artifacts/smash-capture-suite.log
+          ffmpeg -hide_banner -loglevel error -framerate 30 -i ci-artifacts/smash_frames/%04d.png -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart ci-artifacts/phase9_smash_demo.mp4
+          rm -rf ci-artifacts/smash_frames
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase9_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/phase9-source-commit.txt
       - name: Render natural grip in all new maps and attack stages
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -72,7 +88,7 @@ jobs:
           git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase8_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase8-source-commit.txt
       - name: Render Korean and English playability screens
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -84,7 +100,7 @@ jobs:
           git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase5_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase5-source-commit.txt
       - name: Render Phase 6 graphics evidence
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -94,7 +110,7 @@ jobs:
           git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase6_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase6-source-commit.txt
       - name: Render Phase 7 map pack
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -104,7 +120,7 @@ jobs:
           git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase7_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase7-source-commit.txt
       - name: Capture Phase 4 real game screens
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -114,7 +130,7 @@ jobs:
           git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase4_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase4-source-commit.txt
       - name: Capture preserved Phase 2 game screens
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -130,7 +146,7 @@ jobs:
             test -s "ci-artifacts/$screen.png"
           done
       - name: Capture real first-person screens
-        if: matrix.godot == '4.7.2'
+        if: matrix.godot == '4.7.2' && !startsWith(github.head_ref || github.ref_name, 'phase9/')
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -160,7 +176,7 @@ jobs:
   windows:
     name: Windows headless validation (4.7.2)
     runs-on: windows-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install checksum-verified official Windows Godot
@@ -219,6 +235,11 @@ jobs:
         shell: pwsh
         run: |
           python tools/test_grip.py *>&1 | Tee-Object ci-artifacts/windows-grip-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Smash presentation and all mode-map matches on Windows
+        shell: pwsh
+        run: |
+          python tools/test_smash.py --matches *>&1 | Tee-Object ci-artifacts/windows-smash-tests.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Save Windows evidence
         if: always()
