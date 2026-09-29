@@ -1,0 +1,10 @@
+{
+  "assets/lighting15/manor_lighting.exr": "de168ccf207a098d1b640a49cd6c4afefb8a4bb232c9203890d4a0791ade5844",
+  "assets/lighting15/manor_lighting.exr.import": "4ce24cbe6b9e22f7e034ce1f50cb3d54fc90919558ef65ca3d8e809b0a94580d",
+  "assets/lighting15/manor_lighting.lmbake": "18b833b542c3c765d475e202a16cd51c6643aeaf3f04cb72692691ea3245077d",
+  "assets/lighting15/manor_lighting.scn": "4dbccc37d22a7e3948bc0ffe0cc056fb11526c3159da0ea12db8d501e4c94197",
+  "scripts/hideplay/manor.gd": "f05cda354c9094551d01da24f3b4dbd1c8dd106fffeae3323a3606d7223f9452",
+  "scripts/lighting15/build_room.gd": "dbdb2909f20ddae528d934917aa0c0388ef042e48c4be2543a3bc585cee92c8d",
+  "scripts/phase4/art.gd": "d3e16d44acab04d01b21d5db55362f4a4399d8d37c46716e0fc357d049a3e96e",
+  "shaders/material14/toy_v2.gdshader": "5c65fbfa684a668a9299615e9d675ad2c8dceb7c31aefa8910d4e919adf53808"
+}
