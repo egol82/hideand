@@ -6,7 +6,7 @@ var studio
 var readings: Dictionary={}
 func _initialize() -> void:call_deferred("run")
 func picture() -> Image:
-	for i in range(8):await process_frame
+	for i in range(2):await process_frame
 	await RenderingServer.frame_post_draw
 	return root.get_texture().get_image()
 func shot(tag: String) -> Image:
@@ -44,12 +44,16 @@ func run() -> void:
 	studio=game.get_node("ToyStudio");studio.set_process(false)
 	require(studio.baked_data!=null,"real baked data is required for final captures")
 	if studio.baked_data==null:return
+	var probe_data: Dictionary=studio.baked_data.get("probe_data")
+	readings["baked_probe_points"]=probe_data.get("points",PackedVector3Array()).size()
+	readings["baked_probe_sh"]=probe_data.get("sh",PackedColorArray()).size()
+	require(readings.baked_probe_points>0 and readings.baked_probe_sh>0,"real rendering backend contains populated probe positions and SH data")
 	game.preferences.language="ko";game.preferences.reduced_motion=true
 	game.start_match(true);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.1)
-	game.fighters[0].reset_fight(Vector3(-7.7,0,0));game.fighters[1].reset_fight(Vector3(-5.5,0,-3.0))
+	game.fighters[0].reset_fight(Vector3(-1.5,0,0.5));game.fighters[1].reset_fight(Vector3(-3.0,0,-3.2))
 	game.fighters[1].visual.rotation.y=0.12
 	for i in [2,3]:game.fighters[i].set_hidden(true,i)
-	game.rig.face(Vector3(0.38,0,-1));game.rig.pitch=-0.025
+	game.rig.face(Vector3(-0.36,0,-1));game.rig.pitch=-0.025
 	game._process(0);studio._process(0)
 	game.ui.toast.text="";game.local_notice="";game.local_notice_time=0;game.ui.message_seconds=0
 	studio.set_lighting(0);await shot("old_room")
@@ -58,9 +62,12 @@ func run() -> void:
 	readings["live_room_mean_pixel_difference"]=difference(direct,indirect)
 	require(readings.live_room_mean_pixel_difference>0.002,"GI changes actual live-map pixels with the same direct lights")
 	game.ui.visible=false;studio.ui_layer.visible=false;game.rig.hand_root.visible=false
-	for a in game.fighters:a.visual.visible=false
+	# Hide the whole participant (including sibling name labels), not only its body mesh.
+	var old_visibility: Array[bool]=[]
+	for a in game.fighters:old_visibility.append(a.visible);a.visible=false
 	await shot("gi_empty")
-	game.fighters[1].visual.visible=true;game.camera.global_position=Vector3(-5.1,0.60,-1.6);game.camera.look_at(Vector3(-5.5,0.12,-3.0))
+	for i in range(game.fighters.size()):game.fighters[i].visible=old_visibility[i]
+	game.fighters[1].visual.visible=true;game.camera.global_position=Vector3(-2.5,0.60,-1.8);game.camera.look_at(Vector3(-3.0,0.12,-3.2))
 	studio.update_contacts();await shot("gi_feet")
 	game.camera.global_position=Vector3(-7,5.55,1.0);game.camera.look_at(Vector3(-3.2,4.9,-7))
 	await shot("gi_upper")

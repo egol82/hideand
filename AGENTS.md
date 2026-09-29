@@ -1,3 +1,19 @@
+# Phase 15 — live manor LightmapGI
+
+Read docs/PHASE15.md and docs/PHASE15_TEST_STATUS.md first. Default scene scenes/phase15.tscn.
+- This explicitly authorized milestone adds real GI; the older Phase14 no-GI scope below applies to that historical milestone, not this one.
+- Preserve collider/navigation/hideout fingerprints and all seven maps. Replace only matching fixed visual meshes using Build15.signature; never hide or rebuild authoritative collision for a lighting change.
+- LightmapGIData paths are relative to the LightmapGI node. Check all326 resolved users, exact asset hashes, UV2 and fixed geometry signature. Node existence alone is insufficient.
+- Seeded hiding furniture stays OUT of the static bake; it and characters, world/camera weapons receive dynamic probes. Never bake hidden-player occupancy or live traces.
+- Lighting B/C keep identical direct lights, environment, tone mapper and exposure. Only real light_data changes; contact support has its own switch. A restores the old state without accumulated changes.
+- Keep world-only depth/shadows and immutable Phase14 materials. Skinned body/weapon authority and same-contact timing stay unchanged. No fake emissive GI or hidden-target outlines.
+- Grounding patches are an explicit artistic supplement, not SSAO/ray tracing. Use actual foot/floor rays, world layers, hidden visibility, fade and bounded caches; never expose a hiding player.
+- Saved native lightmaps are runtime assets, not cache. Ordinary F5 must not start an editor bake. Preserve source/asset manifest bytes and LF rules on every platform.
+- The earlier editor-finalize error must remain disclosed. Recovered populated data must pass a clean import, live scene integration and actual rendered probe tests before publication. Do not turn continue-on-error into a success claim.
+- Dummy/headless renderer can return empty probe arrays. Check resource schema there, and actual nonempty points/SH plus probe-lit pixels on a rendering backend; do not weaken the render check.
+- Preserve all inherited test runners and94 unchanged sync assertions. New captures hide entire actors (including labels) only for an explicit empty-room fixture. Staged pictures are not human play or hardware benchmarks.
+- New models/animation/whole-map art, physical glass transmission and dynamic indirect rebaking are out of scope. No unrequested merge, paid assets, fonts, engine binaries, saves, secrets or force push.
+
 # Hide & Smashing — Phase14 material/shader rules
 
 Read README.md, docs/PHASE14.md, docs/PHASE14_TEST_STATUS.md and docs/ASTRA_START.md. Default entry scenes/phase14.tscn uses the Phase13 character controller with a material-only ToyStudio override. Read historical scope/invariants in PHASE13.md, PHASE12.md, PHASE11.md and CUTE_SYNC.md before changing those systems.

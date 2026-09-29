@@ -23,7 +23,7 @@ ToyStudio rather than replacing gameplay.
   contact supplements, NOT SSAO or physically traced contact shadows. Parent visibility/layers
   suppress them for hidden/local-camera actors. All cabinet patches are identical regardless of occupancy.
 - Lighting A restores the older lighting; B is the new direct-light setup; C adds the real baked data.
-  B/C share the same direct light and environment. Material I/II, A/B/C material profiles and contact
+  B/C share the same direct light, environment and filmic tone mapping (white4, exposure1). A restores the prior mapper. This maps bright values rather than boosting lightmap energy. Material I/II, A/B/C material profiles and contact
   support remain separately selectable. No lighting preference is advertised as a performance tier.
 
 ## Scope
@@ -38,8 +38,7 @@ hashes additionally guard asset/generator provenance.
 
 `tools/build_lighting15.gd` builds the UV2 source.
 The explicit editor flag `--bake-manor15` invokes the actual Bake Lightmaps action via
-`addons/manor_bake15`; ordinary games never run the editor tool. The workflow requires successful
-exit, populated GI data and clean script/shader error logs. A green continue-on-error bake is NOT used.
+`addons/manor_bake15`; ordinary games never run the editor tool. The original GPU bake generated real populated data but its editor-finalize error prevented a clean exit. This is recorded as a failed automation run, not a passing bake process. The recovery workflow restores that exact hashed data, requires clean live-game import/state/contact validation, and commits the verified native assets. Once the manifest is tracked it uses those committed files and does not require an expiring artifact. Future changed geometry requires a new explicit bake and matching manifest; the workflow does not silently reuse mismatched data. A green continue-on-error bake is NOT used.
 `tools/test_lighting15.py --matches` checks integration and all seven maps in both modes.
 `--capture` also renders B/C comparison, empty-room/feet views, and isolates dynamic body,
 world-weapon and camera-weapon probe pixels with direct and ambient lights disabled.
@@ -57,3 +56,7 @@ Technical basis: Godot4.4 LightmapGI/LightmapProbe/GeometryInstance3D documentat
 are tested in Godot4.4.1. All assets are project-generated and LICENSE remains unchanged.
 https://docs.godotengine.org/en/4.4/classes/class_lightmapgi.html
 https://docs.godotengine.org/en/4.4/classes/class_lightmapprobe.html
+
+## Verification interpretation
+
+Headless/Dummy rendering is sufficient for paths, UV2, geometry signatures and state assertions, but not shader pixels or populated renderer capture arrays. The actual OpenGL fixture separately checks nonempty native probe positions/SH and illumination of the real skinned body, real world weapon and actual camera-held weapon with all direct/ambient/reflection lighting off. The empty-room capture hides participants and name labels together; it does not remove them from the playable game.

@@ -111,7 +111,8 @@ func apply_lighting() -> void:
 		var env: Environment=game.environment_node.environment
 		env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color=Color("dce4e2");env.ambient_light_energy=0.13
-		env.tonemap_exposure=1.0
+		env.tonemap_mode=Environment.TONE_MAPPER_FILMIC
+		env.tonemap_white=4.0;env.tonemap_exposure=1.0
 	refresh_dynamic(true)
 	update_copy()
 

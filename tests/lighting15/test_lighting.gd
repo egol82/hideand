@@ -22,7 +22,7 @@ func authority(g) -> Array:
 	for actor in g.fighters:data.append([actor.transform,actor.weapon.global_transform,actor.weapon_data.to_dictionary(),actor.hit_samples.duplicate(),actor.body_art.body.mesh,actor.body_art.body.skin])
 	return data
 func light_state(g,s) -> Array:
-	var out: Array=[g.environment_node.environment.ambient_light_energy,g.environment_node.environment.ambient_light_color]
+	var out: Array=[g.environment_node.environment.ambient_light_energy,g.environment_node.environment.ambient_light_color,g.environment_node.environment.tonemap_mode,g.environment_node.environment.tonemap_exposure,g.environment_node.environment.tonemap_white]
 	for n in s.bundle.get_node("AuthoredLights").get_children():out.append([n.transform,n.light_color,n.light_energy,n.shadow_enabled])
 	return out
 func meshes(n: Node) -> Array[MeshInstance3D]:
@@ -46,12 +46,16 @@ func run() -> void:
 		check(studio.baked_data.get_user_count()==Build.fixed_meshes(game.arena).size(),"every fixed source has a populated baked user")
 		check(studio.baked_data.get_lightmap_textures().size()>0,"baked lightmap texture array exists")
 		var valid:=true
+		var mapped: Dictionary={}
 		for i in range(studio.baked_data.get_user_count()):
 			var n=studio.gi.get_node_or_null(studio.baked_data.get_user_path(i))
 			if not n is MeshInstance3D:valid=false
+			else:mapped[n.get_instance_id()]=true
+		check(mapped.size()==studio.baked_data.get_user_count(),"each baked user maps to a unique live static mesh")
 		check(valid,"all baked user paths resolve from LightmapGI inside the live gameplay scene")
 		var probes=studio.baked_data.get("probe_data")
-		check(probes is Dictionary and not probes.is_empty(),"engine-generated probe data is populated")
+		check(probes is Dictionary and not probes.is_empty(),"engine-generated probe resource schema is present")
+		check(probes.has("points") and probes.has("sh") and probes.has("tetrahedra"),"probe resource exposes its native capture schema; GPU content is checked by the render test")
 		var file:=FileAccess.open("res://ci-artifacts/lighting15-probe-keys.txt",FileAccess.WRITE);file.store_string(str(probes.keys()));file.close()
 	var source:=Build.fixed_meshes(game.arena)
 	check(source.size()==326,"326 fixed meshes; no randomized cabinet or actor in static bake")
@@ -74,7 +78,10 @@ func run() -> void:
 		check(studio.bundle.visible==(mode>0),"mode %d toggles only new visual bundle"%mode)
 		check(source[0].visible==(mode==0),"mode %d prevents duplicate floor geometry"%mode)
 		check(studio.gi.light_data==(studio.baked_data if mode==2 else null),"mode %d really switches lightmap/probe resource"%mode)
+	studio.set_lighting(0)
+	check(game.environment_node.environment.tonemap_mode==Environment.TONE_MAPPER_LINEAR,"previous mode restores its original tone mapper")
 	studio.set_lighting(1);var lights:=light_state(game,studio)
+	check(game.environment_node.environment.tonemap_mode==Environment.TONE_MAPPER_FILMIC,"new direct setup selects filmic tone mapping")
 	studio.set_lighting(2)
 	check(light_state(game,studio)==lights,"GI off/on use identical direct lights and environment")
 	for gen in [1,2]:
