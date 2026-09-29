@@ -1,0 +1,25 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/premium/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/graphics/director.gd" id="2_graphics"]
+
+[ext_resource type="Script" path="res://scripts/viewmodel/hud_clearance.gd" id="3_hud"]
+
+[ext_resource type="Script" path="res://scripts/smash/sync_director.gd" id="4_smash"]
+
+[ext_resource type="Script" path="res://scripts/renderlab/director.gd" id="5_studio"]
+
+[node name="HideAndSmashing" type="Node3D"]
+script = ExtResource("1_game")
+
+[node name="GraphicsDirector" type="Node" parent="."]
+script = ExtResource("2_graphics")
+
+[node name="GripPresentation" type="Node" parent="."]
+script = ExtResource("3_hud")
+
+[node name="SmashDirector" type="Node" parent="."]
+script = ExtResource("4_smash")
+
+[node name="ToyStudio" type="Node" parent="."]
+script = ExtResource("5_studio")
