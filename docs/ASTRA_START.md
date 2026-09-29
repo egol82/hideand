@@ -1,11 +1,12 @@
-# Astra — Phase 10 Toy Studio handoff
+# Astra — Phase 11 handoff
 
-Latest branch phase10/toy-studio; default scenes/phase10.tscn. Read AGENTS.md, docs/PHASE10.md and docs/PHASE10_TEST_STATUS.md. Continue existing implementation; do not restart the game or engine.
+Continue on `phase11/hide-and-seek`. Read AGENTS.md, PHASE11.md and PHASE11_TEST_STATUS.md. Default scene: scenes/phase11.tscn. Do not rebuild the game from scratch.
 
-Preserve round paws, enlarged cosmetic weapon and confirmed-contact sync. A/B/C only changes presentation. Original vectors, damage, reach, weapon samples, maps, hiding, clocks, controls and saves remain intact.
-
-The authored cake scene is scenes/art/sugar_island.scn; its generator is tools/build_studio_asset.gd. tools/export_studio_room.gd exports real UV2 ArrayMesh static geometry to assets/renderlab/generated/sugar_static.scn. This is an authoring scene, not an automatic replacement of active maps. Bake it in the editor; the optional --studio-bake plugin uses the real toolbar operation. Verify actual LightmapGIData before saying baked.
-
-Run all prior suites and tools/test_studio.py --export --matches. Use --capture for same-camera A/B/C screenshots and --contacts for actual-input hit frames. Software rendering is not a hardware benchmark. Compare materials/visibility as well as CPU/GPU frame time on a real target PC.
-
-No auto merge/force push/license change. Report exact tested source SHA, actual captures, failures and unfinished GI/gameplay integration honestly.
+- New seventh map is physically two-floor. Both ramp-backed stairs and graph paths must work; old six maps' geometry/assets remain.
+- services.gd owns hiding exits, peek exposure, recorded decoys/traces, shared-cooldown seeker skills, short contextual transfers and coarse endgame clues.
+- No exact hidden-player radar. Peek needs actual LOS/cone/range; maps are public-only. Sound snapshots preserve floor height and never chase an owner's new hidden position.
+- Ambush is an ordinary queued attack after the shared FIELD reveal, not synthetic damage or time stop. Preserve cute paws, contact metadata/projection, AttackSpec, weapon samples/reach, HP/score/time.
+- Don't describe the chute/private passage as free-physics crawling or the prototype art as production-complete. Bots currently use sound/inspection/limited relocation but do not plan every special passage.
+- Run tools/test.sh, test_phase3.sh and Python runners phase4/quality/graphics/maps/grip/smash/sync/studio; run test_hideplay.py --matches and actual captures with --capture --video. Keep failing assertions, fix behavior or invalid fixtures explicitly.
+- Extend tests for geometry and 30/60/120Hz presentation, options, resets, role restrictions, occupied exits and no clue leaks. Use real human sessions to judge fun and search balance.
+- All old branches and LICENSE remain. Work on feature branches, no unrequested merge/force-push, no paid APIs/font binaries/engine caches/secrets. Report actual command/commit/log/capture rather than test count as a quality score.

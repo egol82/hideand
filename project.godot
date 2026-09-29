@@ -4,9 +4,9 @@ config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase10.tscn"
+run/main_scene="res://scenes/phase11.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 10: soft toy materials, editable bakery art and contact-aligned smash."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 11: two-floor Hideaway Manor, peek, decoys, two exits and clue-driven search."
 
 [display]
 window/size/viewport_width=1280
