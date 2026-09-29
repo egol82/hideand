@@ -6,7 +6,7 @@
 
 Phase 13 is a character-model/rig milestone. It does not silently include the proposed future shader/GI/full-animation stages.
 
-- A project-authored implicit surface blends the head, torso, shoulders, arms, round paws, pelvis, legs, feet and ears into **one connected indexed body**. This is not disconnected primitives merged into one draw call. The generated body has 10,024 vertices and 20,044 triangles; topology tests require a single connected closed two-manifold surface and consistent winding.
+- A project-authored implicit surface blends the head, torso, shoulders, arms, round paws, pelvis, legs, feet and ears into **one connected indexed body**. This is not disconnected primitives merged into one draw call. The generated body has 10,024 vertices and 20,044 triangles; topology tests require a single connected surface, exactly two incident faces per triangle edge and consistent winding.
 - A real `Skeleton3D` with 18 named bones, `Skin` rest bindings and up to four weighted influences per vertex. MeshInstance3D explicitly references the skeleton. Arm changes deform vertices, rather than merely moving separate arm objects. The body mesh is shared across actors; each actor has independent bindings/poses.
 - Face features are small separate meshes attached to the head bone: eyes, glints, cheeks, nose, mouth and ear insets. Existing blinking, squint/spiral expression and KO overlays remain. A tiny chest marking follows the spine. “One body” does not mean that eyes and every decorative detail share the body surface.
 - Default neutral pose, restrained idle motion, A-pose inspection and a right-arm ready-pose fit to the existing grip point. Left/right BoneAttachment3D sockets are available for later work. The right-arm fit has bounded reach, does not own/move the weapon and is NOT a complete hand/body IK system or full animation library.
@@ -15,7 +15,7 @@ Phase 13 is a character-model/rig milestone. It does not silently include the pr
 
 ## Art and asset pipeline
 
-`mesh_builder.gd` uses a bounded deterministic field, marching tetrahedra, analytic-gradient normals, edge reuse and position welding. It contains no random-state or paid/external asset dependency. Offline building takes the same generator used by the cached fallback. Surface coordinates are simple procedural-material coordinates, not a production hand-painted texture atlas or new lightmap unwrap.
+`mesh_builder.gd` uses a bounded deterministic field, marching tetrahedra, field-gradient normals estimated by central finite differences, edge reuse and position welding. The earlier phrase “analytic-gradient normals” was imprecise: the field is defined by expressions, but its gradient is numerically sampled. This documentation correction does not change geometry or shading code. The builder contains no random-state or paid/external asset dependency. Offline building takes the same generator used by the cached fallback. Surface coordinates are simple procedural-material coordinates, not a production hand-painted texture atlas or new lightmap unwrap.
 
 `tools/build_character13.gd` saves:
 - `assets/character13/buddy_body.res`: native weighted ArrayMesh.
@@ -41,7 +41,7 @@ No new material/GI polish, performance rating, hardware FPS/audio-latency test, 
 With a display or Xvfb: `python tools/test_character13.py --capture`.
 Keep the old core, first-person, phase4, quality, graphics, maps, grip, smash, sync, studio, hideplay and premium runners. See `PHASE13_TEST_STATUS.md` for observed results, failures and exact source SHA.
 
-## Primary technical references consulted
+## Primary technical references consulted during implementation
 
 - https://docs.godotengine.org/en/4.4/classes/class_skeleton3d.html
 - https://docs.godotengine.org/en/4.4/classes/class_surfacetool.html
