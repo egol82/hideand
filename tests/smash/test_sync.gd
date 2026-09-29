@@ -22,6 +22,7 @@ func run() -> void:
 	root.size = Vector2i(1280,720)
 	var selected: PackedScene = load("res://scenes/phase10.tscn") if "--studio" in OS.get_cmdline_user_args() else Scene
 	if "--hideplay" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase11.tscn")
+	if "--premium" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase12.tscn")
 	game = selected.instantiate(); root.add_child(game); game.automated = true
 	await process_frame; await process_frame
 	game.set_process(false)

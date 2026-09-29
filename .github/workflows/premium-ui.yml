@@ -1,0 +1,81 @@
+name: Proportional weapons and adventure UI
+on:
+  push:
+    branches: ['phase12/**']
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: premium-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-verified official Godot 4.4.1
+        shell: python
+        run: |
+          import hashlib, os, pathlib, urllib.request, zipfile
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'premium-godot'; root.mkdir(exist_ok=True)
+          plat='win64.exe' if os.name=='nt' else 'linux.x86_64'
+          name='Godot_v4.4.1-stable_'+plat+'.zip'
+          base='https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+          archive=root/name; urllib.request.urlretrieve(base+name,archive)
+          lines=urllib.request.urlopen(base+'SHA512-SUMS.txt').read().decode().splitlines()
+          expected=[line.split()[0] for line in lines if line.endswith(name)]
+          assert len(expected)==1 and hashlib.sha512(archive.read_bytes()).hexdigest()==expected[0].lower()
+          with zipfile.ZipFile(archive) as z: z.extractall(root)
+          exe=next(root.glob('*_console.exe' if os.name=='nt' else '*.x86_64'))
+          if os.name!='nt': exe.chmod(0o755)
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f: f.write('GODOT_BIN='+str(exe)+'\n')
+      - name: Real UI, size, contact checks and fourteen matches
+        run: python tools/test_premium.py --matches
+      - name: Existing Python-driven engine regressions
+        shell: python
+        run: |
+          import subprocess,sys
+          for runner in ['phase4','quality','graphics','maps','grip','smash','sync','studio','hideplay']:
+              result=subprocess.run([sys.executable,'tools/test_'+runner+'.py'])
+              if result.returncode: raise SystemExit(result.returncode)
+      - name: Existing core suites
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          bash tools/test.sh
+          bash tools/test_phase3.sh
+          python tools/verify_project.py
+      - name: Existing core suites on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./tools/test.ps1 -Godot $env:GODOT_BIN
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./tools/test_phase3.ps1 -Godot $env:GODOT_BIN
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/verify_project.py
+      - name: Real bilingual UI screenshots
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk xvfb
+          xvfb-run -a python tools/test_premium.py --capture
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase12_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/premium-source-commit.txt
+      - name: Save exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7

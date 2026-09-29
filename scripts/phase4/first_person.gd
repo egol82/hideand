@@ -15,6 +15,10 @@ var display_progress := 0.0
 var rebuild_count := 0
 # Opt-in only: earlier test scenes retain their original viewmodel.
 var cute_sync := false
+# Opt-in for Phase12: one view scale for all drawings, no inverse reach normalisation.
+var drawn_size_view := false
+const DRAWING_VIEW_SCALE := 0.40
+var rested_weapon_bounds := Rect2()
 var contact_pose := Transform3D.IDENTITY
 var contact_age := 1.0
 var contact_fresh := false
@@ -55,6 +59,9 @@ func follow(actor, delta: float, aim_locked: bool, visible_hands: bool) -> void:
 	var recoil := 0.0 if reduced_motion else sin(kick/0.14*PI)*0.055*feedback_strength
 	hand_root.position = Vector3(0.39-0.43*sweep,-0.34-0.19*wall_retract+0.04*sweep,-0.80+wall_retract*0.25+recoil)+bob
 	hand_root.rotation = Vector3(-0.55*wall_retract,0.22*sweep,0.9*sweep)
+	if drawn_size_view:
+		hand_root.position += Vector3(0.055,-0.13,-0.11)
+		_clear_center_view()
 	if cute_sync:
 		# Larger rest silhouette; during the active swing use projected authority geometry,
 		# not a second unrelated screen-space swing curve.
@@ -73,11 +80,12 @@ func _rebuild(actor) -> void:
 		hand_root.remove_child(child)
 		child.queue_free()
 	mount = Node3D.new()
-	mount.rotation_degrees = Vector3(-90,0,-12)
+	mount.rotation_degrees = Vector3(-90,0,-42 if drawn_size_view else -12)
 	hand_root.add_child(mount)
 	view_weapon = Form4.build(actor.weapon_data)
 	var display_scale := minf(0.27,0.44/maxf(0.1,actor.weapon_data.reach()))
 	if cute_sync: display_scale = clampf(0.68/maxf(0.1,actor.weapon_data.reach()),0.32,0.46)
+	if drawn_size_view: display_scale = DRAWING_VIEW_SCALE
 	view_weapon.scale = Vector3.ONE*display_scale
 	mount.add_child(view_weapon)
 	display_anchor = Vector3.ZERO
@@ -159,3 +167,28 @@ func _align_attack(actor, delta: float) -> void:
 	var geometry: Transform3D = mount.transform*view_weapon.transform
 	var desired := local*geometry.affine_inverse()
 	hand_root.transform = hand_root.transform.interpolate_with(desired,weight)
+
+func _clear_center_view() -> void:
+	if not is_instance_valid(view_weapon) or view_weapon.mesh == null: return
+	# Move, never resize. A quiet centre window is reserved during idle; contact alignment
+	# deliberately overrides this pose during an attack, so impacts never miss visually.
+	var aabb := view_weapon.mesh.get_aabb()
+	var local := hand_root.transform*mount.transform*view_weapon.transform
+	var points: Array[Vector3] = []
+	for i in range(8): points.append(local*aabb.get_endpoint(i))
+	var viewport_size := get_viewport().get_visible_rect().size
+	var centre_limit := viewport_size.x*0.66
+	var horizon_limit := viewport_size.y*0.60
+	var needed_drop := 0.0
+	var projected_rect := Rect2()
+	var first := true
+	for point in points:
+		if point.z >= -0.05: continue
+		var screen := view.unproject_position(view.global_transform*point)
+		if first: projected_rect=Rect2(screen,Vector2.ZERO); first=false
+		else: projected_rect=projected_rect.expand(screen)
+		if screen.x<centre_limit and screen.y<horizon_limit:
+			var threshold := view.project_position(Vector2(screen.x,horizon_limit),-point.z)
+			needed_drop=maxf(needed_drop,point.y-(view.global_transform.affine_inverse()*threshold).y)
+	hand_root.position.y-=minf(0.56,needed_drop)
+	rested_weapon_bounds=projected_rect

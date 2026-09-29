@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 10 Toy Studio graphics; historical entries remain available.
+; Hide & Smashing — Phase 12 proportional drawings and native adventure UI; historical entries remain available.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase11.tscn"
+run/main_scene="res://scenes/phase12.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 11: two-floor Hideaway Manor, peek, decoys, two exits and clue-driven search."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 12: proportional drawn toys, lowered view and an original adventure-journal interface."
 
 [display]
 window/size/viewport_width=1280

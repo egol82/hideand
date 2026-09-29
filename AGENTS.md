@@ -1,3 +1,11 @@
+# Hide & Smashing — Phase12 presentation extension
+
+Read docs/PHASE12.md, docs/PHASE12_TEST_STATUS.md and the updated ASTRA_START.md first. Default new entry scenes/phase12.tscn. All inherited invariants below remain.
+
+- Use a fixed0.40 visual drawing scale, not inverse reach normalization. Existing world caps/data/attacks stay. Visibility changes translation only; selected-contact alignment wins during active strikes.
+- Native UI helpers may read local/public state only. Keep actual menu,save,remap,hide/search,results callbacks and escape navigation. No Nintendo assets/fonts or franchise branding.
+- Keep new scene adapters opt-in; old scenes retain earlier HUD and view scale. Run test_premium.py --matches and existing suites. Tests use actual logical-to-physical viewport transforms. Never count repeated94 sync assertions twice.
+
 # Hide & Smashing — Phase 11 hide/search rules
 
 Read README.md, docs/PHASE11.md, docs/PHASE11_TEST_STATUS.md and docs/ASTRA_START.md. Historical graphics/weapon evidence remains in PHASE10.md, CUTE_SYNC.md and their test-status documents.

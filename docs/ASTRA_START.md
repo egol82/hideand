@@ -1,12 +1,11 @@
-# Astra — Phase 11 handoff
+# Astra — Phase 12 handoff
 
-Continue on `phase11/hide-and-seek`. Read AGENTS.md, PHASE11.md and PHASE11_TEST_STATUS.md. Default scene: scenes/phase11.tscn. Do not rebuild the game from scratch.
+Continue on `phase12/premium-interface`, default `scenes/phase12.tscn`. Read AGENTS.md, PHASE12.md and PHASE12_TEST_STATUS.md. Do not recreate the game.
 
-- New seventh map is physically two-floor. Both ramp-backed stairs and graph paths must work; old six maps' geometry/assets remain.
-- services.gd owns hiding exits, peek exposure, recorded decoys/traces, shared-cooldown seeker skills, short contextual transfers and coarse endgame clues.
-- No exact hidden-player radar. Peek needs actual LOS/cone/range; maps are public-only. Sound snapshots preserve floor height and never chase an owner's new hidden position.
-- Ambush is an ordinary queued attack after the shared FIELD reveal, not synthetic damage or time stop. Preserve cute paws, contact metadata/projection, AttackSpec, weapon samples/reach, HP/score/time.
-- Don't describe the chute/private passage as free-physics crawling or the prototype art as production-complete. Bots currently use sound/inspection/limited relocation but do not plan every special passage.
-- Run tools/test.sh, test_phase3.sh and Python runners phase4/quality/graphics/maps/grip/smash/sync/studio; run test_hideplay.py --matches and actual captures with --capture --video. Keep failing assertions, fix behavior or invalid fixtures explicitly.
-- Extend tests for geometry and 30/60/120Hz presentation, options, resets, role restrictions, occupied exits and no clue leaks. Use real human sessions to judge fun and search balance.
-- All old branches and LICENSE remain. Work on feature branches, no unrequested merge/force-push, no paid APIs/font binaries/engine caches/secrets. Report actual command/commit/log/capture rather than test count as a quality score.
+- Same0.40 camera presentation multiplier for every drawing. Existing world nominal2.4 canvas scale/reach2.20/fill-area2.6 limits stay. Never normalize all drawings to equal apparent size.
+- Resting weapon is translated down/right, never reduced by a visibility fit. Contact alignment overrides rest pose during real swings. Verify different sizes and narrow/wide/split drawings; disclose cropping limits.
+- Native premium interface preserves original callbacks: hidden exits/peek/skills, settings/remaps, save confirmation/recovery, draft timing, map privacy and result scores. No decorative fake interactions.
+- Keep information hierarchy and generous spacing; do not restore overlapping paragraphs on the HUD. Additional guidance belongs in the guide/settings. Localize new copy in Korean/English.
+- UI layout tests must use the viewport's final transform; Godot uses a1280x720 logical canvas. Buttons/canvas/primary action must remain visible at1120x680 and larger. Avoid per-frame node creation, through-wall info, global time or player-state writes from UI.
+- Run every existing test runner and test_premium.py --matches. Reuse94 existing sync assertions with --premium. Real captures are staged engine evidence, not concept art or manual playthroughs.
+- No Nintendo asset, font, music or logo may be copied. No paid services/telemetry/engine migration. LICENSE/main/other branches preserved. Commit on feature branch and PR; no unrequested merge/force push.
