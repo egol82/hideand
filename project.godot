@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 15 live manor lighting, native lightmaps and dynamic probes; earlier entries remain.
+; Hide & Smashing — Phase 16 skeletal animation and bounded hand/foot IK; earlier entries remain.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase15.tscn"
+run/main_scene="res://scenes/phase16.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 15: native manor LightmapGI, probe-lit characters and grounded toy shadows."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 16: native motion clips, contact-synchronized reactions and hand/foot IK over the existing manor GI."
 
 [display]
 window/size/viewport_width=1280
