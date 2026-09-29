@@ -23,6 +23,7 @@ func run() -> void:
 	var selected: PackedScene = load("res://scenes/phase10.tscn") if "--studio" in OS.get_cmdline_user_args() else Scene
 	if "--hideplay" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase11.tscn")
 	if "--premium" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase12.tscn")
+	if "--character13" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase13.tscn")
 	game = selected.instantiate(); root.add_child(game); game.automated = true
 	await process_frame; await process_frame
 	game.set_process(false)
