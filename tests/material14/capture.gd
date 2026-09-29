@@ -72,7 +72,7 @@ func run() -> void:
 	for i in range(2):
 		var x: float=-0.95 if i==0 else 0.95
 		Art.box(gallery,Vector3(x,0.60,0),Vector3(1.48,1.12,0.75),Color("ceb297"),"foam" if i==0 else "fabric",0.16)
-		label(Vector3(x,-0.13,0.42),"FOAM" if i==0 else "FABRIC")
+		label(Vector3(x,0.18,0.70),"FOAM" if i==0 else "FABRIC")
 	shade(gallery);await shot("foam_fabric_detail")
 	stage.queue_free();await process_frame;materials.cache.clear()
 	game=Scene.instantiate();root.add_child(game);game.automated=true
