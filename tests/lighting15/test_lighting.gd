@@ -47,9 +47,9 @@ func run() -> void:
 		check(studio.baked_data.get_lightmap_textures().size()>0,"baked lightmap texture array exists")
 		var valid:=true
 		for i in range(studio.baked_data.get_user_count()):
-			var n=studio.bundle.get_node_or_null(studio.baked_data.get_user_path(i))
+			var n=studio.gi.get_node_or_null(studio.baked_data.get_user_path(i))
 			if not n is MeshInstance3D:valid=false
-		check(valid,"all baked user paths resolve inside the instantiated gameplay scene")
+		check(valid,"all baked user paths resolve from LightmapGI inside the live gameplay scene")
 		var probes=studio.baked_data.get("probe_data")
 		check(probes is Dictionary and not probes.is_empty(),"engine-generated probe data is populated")
 		var file:=FileAccess.open("res://ci-artifacts/lighting15-probe-keys.txt",FileAccess.WRITE);file.store_string(str(probes.keys()));file.close()
