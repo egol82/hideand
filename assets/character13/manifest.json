@@ -1,0 +1,6 @@
+{
+  "assets/character13/buddy_body.res": "11e9458e0f06d1c620429886b84eefd980c8929c42d26d6a72116911be4c53ee",
+  "assets/character13/buddy_rig.scn": "de8cc9e3c80f02fbc9ab671ff26740f58bf2636e4a0f1a43135d5431a50145f4",
+  "scripts/character13/mesh_builder.gd": "b7dac2b5ea4c67053af23a407a6c8b38344db0fffc69c192481176559a1ab336",
+  "scripts/character13/avatar.gd": "649d64bac3255ae8c54f881df0b476fd9d53cf4eecc4a8927ac6eb26330c7a16"
+}

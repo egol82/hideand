@@ -1,21 +1,18 @@
-# Hide & Smashing — Phase 12 / The Toy Journal
+# Hide & Smashing — Phase 13
 
-**내가 그린 크기대로 만드는 무기. 숨고, 속이고, 들키면 반격하는 장난감 모험.**
+직접 그린 무기로 숨고 반격하는 장난감 게임입니다. 최신 브랜치는 `phase13/skinned-character`, 기본 씬은 `scenes/phase13.tscn`입니다.
 
-최신 브랜치 `phase12/premium-interface`, 기본 씬 `scenes/phase12.tscn`.
+## 이번 변경: 캐릭터 모델과 뼈대
 
-## 이번 변경
+몸통·머리·팔·둥근 손·다리·발·귀가 이어지는 단일 몸체에 실제18개 뼈와 스킨 가중치를 넣었습니다. 팔을 움직이면 메시가 변형됩니다. 얼굴은 머리 뼈를 따르고, 기본 대기·A포즈·무기 준비 자세를 확인할 수 있습니다.
 
-- 1인칭에서 큰 그림을 줄이던 역비례 배율을 제거했습니다. 작은 그림은 작고, 큰 그림은 크게 표시됩니다. 기존 실제 사거리2.20m와 채움 면적 한도는 유지하고 공방에 크기/한도 상태를 표시합니다.
-- 무기는 아래/오른쪽으로 내려 중앙 시야를 비웁니다. 크기를 몰래 줄이지 않으며 큰 도형은 화면 아래로 일부 잘릴 수 있습니다. 타격 순간은 기존 실제 접촉 정렬이 우선입니다.
-- 메뉴/HUD/공방/설정/지도/결과를 깊은 녹색·종이색·황동색의 원래 모험 수첩 디자인으로 다시 구성했습니다. 젤다의 정보 계층/여백을 참고했지만 원작 에셋·아이콘·폰트를 복제하지 않았습니다.
-- 실제 조작키 변경,8슬롯 저장/복구,한/영,일곱 맵과 은신/도구/반격,둥근 손/타격 효과/ToyStudio는 유지합니다.
+네 캐릭터·공방 미리보기·KO 잔상에 적용했습니다. 기존 1인칭 둥근 손, 그린 크기 그대로의 무기, 낮은 대기 자세, 타격 싱크·숨바꼭질 규칙·일곱 맵과 메뉴는 유지합니다.
 
 ## 실행
 
-Godot Standard에서 `project.godot` 열기 → F5 → 숨는 역할/술래/공방 선택. Esc 메뉴,Tab 그림판,M 지도. 시작 화면의 도움말에 상세 규칙이 있습니다. 사람1명+봇3명 오프라인이며 온라인/Steam/배포EXE는 이번 작업에 포함하지 않습니다.
+Godot Standard에서 `project.godot` → F5 → 무기 공방 또는 게임 시작.
+모델/뼈대만 편집하려면 `assets/character13/buddy_rig.scn`을 여세요.
 
-검사: `GODOT_BIN=/path/to/godot python tools/test_premium.py --matches`.
-`docs/PHASE12.md`, `docs/PHASE12_TEST_STATUS.md`, `docs/ASTRA_START.md`를 확인하세요.
+`docs/PHASE13.md`, `docs/PHASE13_TEST_STATUS.md`, `AGENTS.md`를 먼저 읽습니다. 엔진검사는 `python tools/test_character13.py --matches`입니다.
 
-'프리미엄'은 디자인 목표이며 상용 완성도/모든 PC 성능 인증을 뜻하지 않습니다. LICENSE 보존. 엔진/폰트/캐시/개인 저장 파일 미포함. main과 이전 PR은 자동 병합하지 않았습니다.
+실제 스킨드 모델이지만 완성된 애니메이션/전신IK/상용 아트 승인 단계는 아닙니다. Phase14 셰이더·Phase15 조명 작업은 이번에 포함하지 않았습니다. 사람의 재미·멀미·Windows GPU/FPS와 온라인/Steam/EXE는 별도 검증 대상입니다. LICENSE·이전 브랜치·main은 보존합니다.

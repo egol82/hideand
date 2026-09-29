@@ -1,0 +1,2 @@
+# Keep generator bytes identical for the source/asset manifest on Windows and Linux.
+*.gd text eol=lf

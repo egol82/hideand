@@ -1,3 +1,15 @@
+# Phase13 character addition
+
+Read docs/PHASE13.md and docs/PHASE13_TEST_STATUS.md first. Default scene is scenes/phase13.tscn.
+- One connected body surface with real Skeleton3D/Skin weights. Do not replace it with disconnected primitives or a screenshot.
+- Keep skeleton/face below cosmetic body_art; never move/reparent/scale weapon_pivot, actor capsule or FacingRoot from character art.
+- Preserve the user's round first-person paws, fixed0.40 drawing multiplier, lowered view and contact alignment.
+- The two-joint ready fit is a cosmetic pose aid only, not a complete IK or collision solution. Later animation must retain this authority boundary.
+- Use named bones and stable proxy handles. Existing hit/KO/hidden presentation must use the same new model; no hidden-face/layer leaks.
+- Keep meshes shared and poses independent. No per-frame surface/skin/node rebuilding. Mask leg influences out of low paws and arm influences out of feet.
+- Native body/rig assets are authored outputs with the generator included. No engine/fonts/cache/player-save files. Regenerate before validating; retain exact source/asset provenance.
+- Run test_character13.py --matches, actual rendered pose checks and all inherited suites. The 94 reused contact assertions must not be counted as new definitions.
+
 # Hide & Smashing — Phase12 presentation extension
 
 Read docs/PHASE12.md, docs/PHASE12_TEST_STATUS.md and the updated ASTRA_START.md first. Default new entry scenes/phase12.tscn. All inherited invariants below remain.
