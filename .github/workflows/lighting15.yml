@@ -1,0 +1,136 @@
+name: Live manor LightmapGI
+on:
+  push:
+    branches: ['phase15/manor-lighting-gi']
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lighting15-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  bake:
+    if: github.ref == 'refs/heads/phase15/manor-lighting-gi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    outputs:
+      source: ${{ steps.publish.outputs.source }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/install_godot15.py
+      - name: Install software Vulkan and editor display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb fonts-noto-cjk
+      - name: Build real fixed-map UV2 geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-artifacts
+          "$GODOT_BIN" --headless --path . --editor --import > ci-artifacts/lighting15-initial-import.log 2>&1
+          "$GODOT_BIN" --headless --path . --script res://tools/build_lighting15.gd > ci-artifacts/lighting15-build.log 2>&1
+          cat ci-artifacts/lighting15-build.log
+          grep -q LIGHTING15_BUILD_PASS ci-artifacts/lighting15-build.log
+          if grep -Eq 'SCRIPT ERROR:|(^|[[:space:]])ERROR:' ci-artifacts/lighting15-build.log; then exit 1; fi
+      - name: Actual editor LightmapGI bake - required, not continue-on-error
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout 780s xvfb-run -a "$GODOT_BIN" --path . --editor --rendering-method forward_plus --audio-driver Dummy -- --bake-manor15 > ci-artifacts/lighting15-editor.log 2>&1
+          cat ci-artifacts/lighting15-editor.log
+          grep -q LIGHTING15_BAKE_PASS ci-artifacts/lighting15-editor.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|(^|[[:space:]])ERROR:' ci-artifacts/lighting15-editor.log; then exit 1; fi
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path('ci-artifacts/lighting15-bake.json').read_text())
+          assert d['baked'] and d['users']==326
+          assert pathlib.Path('assets/lighting15/manor_lighting.lmbake').stat().st_size>100
+          PY
+      - name: Publish verified native GI assets on this feature branch only
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib,hashlib,json
+          root=pathlib.Path('.')
+          names=[str(p) for p in pathlib.Path('assets/lighting15').glob('*') if p.suffix in ['.scn','.lmbake','.exr','.import']]
+          names+=['scripts/lighting15/build_room.gd','scripts/hideplay/manor.gd','scripts/phase4/art.gd','shaders/material14/toy_v2.gdshader']
+          data={name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in sorted(names)}
+          pathlib.Path('assets/lighting15/manifest.json').write_text(json.dumps(data,indent=2)+'\n')
+          PY
+          test "$(git ls-remote origin refs/heads/phase15/manor-lighting-gi | cut -f1)" = "$(git rev-parse HEAD)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/lighting15
+          if ! git diff --cached --quiet; then
+            git commit -m 'build: commit real manor lightmaps, probe data and exact baked mesh [skip ci]'
+            git push origin HEAD:refs/heads/phase15/manor-lighting-gi
+          fi
+          echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Save bake evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighting15-bake
+          path: |
+            ci-artifacts/
+            assets/lighting15/
+          retention-days: 7
+  verify:
+    needs: bake
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bake.outputs.source }}
+      - run: python tools/install_godot15.py
+      - name: Verify baked data hashes, actual game integration and fourteen matches
+        shell: python
+        run: |
+          import hashlib,json,pathlib,subprocess,sys
+          for name,digest in json.loads(pathlib.Path('assets/lighting15/manifest.json').read_text()).items():
+              assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
+          subprocess.run([sys.executable,'tools/test_lighting15.py','--matches'],check=True)
+      - name: Preserve existing core and Python-driven engine tests
+        shell: python
+        run: |
+          import os,subprocess,sys
+          for runner in ['phase4','quality','graphics','maps','grip','smash','sync','studio','hideplay','premium','character13','material14']:
+              subprocess.run([sys.executable,'tools/test_'+runner+'.py'],check=True)
+          if os.name=='nt':
+              for script in ['tools/test.ps1','tools/test_phase3.ps1']:
+                  subprocess.run(['pwsh','-File',script,'-Godot',os.environ['GODOT_BIN']],check=True)
+          else:
+              for script in ['tools/test.sh','tools/test_phase3.sh']:subprocess.run(['bash',script],check=True)
+          subprocess.run([sys.executable,'tools/verify_project.py'],check=True)
+      - name: Render actual empty room, GI comparison, contact support and isolated dynamic probes
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk
+          xvfb-run -a python tools/test_lighting15.py --capture
+          grep -q LIGHTING15_RENDER_PASS ci-artifacts/lighting15-render.log
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase15_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/lighting15-source-commit.txt
+      - name: Save exact source and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighting15-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
