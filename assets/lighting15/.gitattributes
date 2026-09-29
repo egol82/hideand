@@ -1,0 +1,5 @@
+*.scn -text
+*.lmbake -text
+*.exr -text
+*.import text eol=lf
+*.json text eol=lf

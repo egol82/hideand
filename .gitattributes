@@ -1,0 +1,10 @@
+# Exact-byte provenance for the baked room and its generator dependencies.
+/scripts/lighting15/*.gd text eol=lf
+/scripts/hideplay/manor.gd text eol=lf
+/scripts/phase4/art.gd text eol=lf
+/shaders/material14/toy_v2.gdshader text eol=lf
+/assets/lighting15/*.json text eol=lf
+/assets/lighting15/*.import text eol=lf
+/assets/lighting15/*.scn binary
+/assets/lighting15/*.lmbake binary
+/assets/lighting15/*.exr binary

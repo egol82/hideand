@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 14 material families v2; historical entries remain available.
+; Hide & Smashing — Phase 15 live manor lighting, native lightmaps and dynamic probes; earlier entries remain.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase14.tscn"
+run/main_scene="res://scenes/phase15.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 14: distinct vinyl, foam, cloth and painted-wood surfaces with unchanged drawn-weapon gameplay."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 15: native manor LightmapGI, probe-lit characters and grounded toy shadows."
 
 [display]
 window/size/viewport_width=1280
@@ -28,4 +28,4 @@ common/physics_ticks_per_second=60
 3d/default_gravity=18.0
 
 [editor_plugins]
-enabled=PackedStringArray("res://addons/toy_studio/plugin.cfg")
+enabled=PackedStringArray("res://addons/toy_studio/plugin.cfg", "res://addons/manor_bake15/plugin.cfg")
