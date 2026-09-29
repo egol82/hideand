@@ -1,0 +1,92 @@
+name: Material families v2
+on:
+  push:
+    branches: ['phase14/material-shaders']
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: material14-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install checksum-verified Godot 4.4.1
+        shell: python
+        run: |
+          import hashlib,os,pathlib,urllib.request,zipfile
+          folder=pathlib.Path(os.environ['RUNNER_TEMP'])/'material-godot';folder.mkdir(exist_ok=True)
+          plat='win64.exe' if os.name=='nt' else 'linux.x86_64'
+          name='Godot_v4.4.1-stable_'+plat+'.zip'
+          base='https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+          archive=folder/name;urllib.request.urlretrieve(base+name,archive)
+          lines=urllib.request.urlopen(base+'SHA512-SUMS.txt').read().decode().splitlines()
+          expected=[line.split()[0] for line in lines if line.endswith(name)]
+          assert len(expected)==1 and hashlib.sha512(archive.read_bytes()).hexdigest()==expected[0].lower()
+          with zipfile.ZipFile(archive) as z:z.extractall(folder)
+          exe=next(folder.glob('*_console.exe' if os.name=='nt' else '*.x86_64'))
+          if os.name!='nt':exe.chmod(0o755)
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:f.write('GODOT_BIN='+str(exe)+'\n')
+      - name: Check inherited native assets and new material/state/contact rules
+        shell: python
+        run: |
+          import hashlib,json,pathlib,subprocess,sys
+          for name,digest in json.loads(pathlib.Path('assets/character13/manifest.json').read_text()).items():
+              assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
+          subprocess.run([sys.executable,'tools/test_material14.py','--matches'],check=True)
+      - name: Preserve all previous Python-driven engine suites
+        shell: python
+        run: |
+          import pathlib,subprocess,sys
+          for runner in ['phase4','quality','graphics','maps','grip','smash','sync','studio','hideplay','premium','character13']:
+              r=subprocess.run([sys.executable,'tools/test_'+runner+'.py'],capture_output=True,text=True,encoding='utf-8',errors='replace')
+              text=r.stdout+r.stderr
+              pathlib.Path('ci-artifacts/material14-previous-'+runner+'.log').write_text(text,encoding='utf-8')
+              print(text,flush=True)
+              if r.returncode:sys.exit(r.returncode)
+      - name: Original core suites on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/test.sh 2>&1 | tee ci-artifacts/material14-previous-core.log
+          bash tools/test_phase3.sh 2>&1 | tee ci-artifacts/material14-previous-phase3.log
+          python tools/verify_project.py
+      - name: Original core suites on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & ./tools/test.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/material14-previous-core.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./tools/test_phase3.ps1 -Godot $env:GODOT_BIN *>&1 | Tee-Object ci-artifacts/material14-previous-phase3.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/verify_project.py
+      - name: Real GLSL pixels, same-light comparisons and surface demonstration
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk ffmpeg
+          xvfb-run -a python tools/test_material14.py --capture
+          ffmpeg -y -framerate 30 -i ci-artifacts/material14_frames/frame_%04d.png -c:v libx264 -pix_fmt yuv420p -movflags +faststart ci-artifacts/material14_surfaces.mp4
+          rm -rf ci-artifacts/material14_frames
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase14_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/material14-source-commit.txt
+      - name: Save exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: material14-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
