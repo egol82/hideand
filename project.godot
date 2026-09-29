@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 13 connected skinned character; historical entries remain available.
+; Hide & Smashing — Phase 14 material families v2; historical entries remain available.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase13.tscn"
+run/main_scene="res://scenes/phase14.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 13: a connected skinned toy character with an editable eighteen-bone rig."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 14: distinct vinyl, foam, cloth and painted-wood surfaces with unchanged drawn-weapon gameplay."
 
 [display]
 window/size/viewport_width=1280
