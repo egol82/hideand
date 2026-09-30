@@ -1,6 +1,6 @@
 {
   "validator": "offline-source-hygiene",
-  "checks": 716,
+  "checks": 757,
   "failures": [],
   "not_verified_by_this_script": [
     "GDScript compilation",

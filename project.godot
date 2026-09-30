@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 17 crafted manor furniture and architectural detail; earlier entries remain.
+; Hide & Smashing — Phase 18 contact-locked effects and sound; historical entries remain.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase17.tscn"
+run/main_scene="res://scenes/phase18.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase 17: crafted manor furniture, rounded cushions, drapery and architectural details over the existing animation and GI."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase18: contact-locked foam impacts, authored sound and restrained hand recovery."
 
 [display]
 window/size/viewport_width=1280
