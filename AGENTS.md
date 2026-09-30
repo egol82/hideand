@@ -1,47 +1,25 @@
-# Phase18 contact-locked presentation
+# Hide & Smashing — Phase19 seven-map integration
 
-Read docs/PHASE18.md, PHASE18_TEST_STATUS.md and ASTRA_START.md. Default scenes/phase18.tscn is opt-in; old entries remain.
-- Keep the existing confirmed contact event and AttackSpec as the only impact/action time source. Preserve94 sync assertions unchanged except new scene selector. No damage timers, time_scale, forced camera rotation/FOV or root-motion changes.
-- New bursts and positional sound use the recorded contact point. Trails read visible weapon geometry only, stop on hit, and clear for hidden actors/reset. Never follow a hidden target or add silhouette/occupancy tells.
-- Camera/world weapon authority, original drawings,0.40 view scale, lowered paws, original animation/IK and model/GI manifests must stay unchanged. Cosmetic hand recovery cannot shift first-contact alignment.
-- Cache authored PCM separately from gameplay RNG. Preserve generic footsteps/hearing/metrics; change only the existing swing waveform. Do not play duplicate whooshes or schedule an independent hit sound.
-- Enforce bounded96 inherited particles/6 words,24 puff instances,48 trails,6 impact voices. No per-frame meshes/audio resources or scene allocations. Comparison must restore original scales/materials/sound paths, not just labels.
-- Pause/mute must reach actual AudioStreamPlayer3D playback. Hidden-node visibility alone is not an audio mute. Respect reduced motion and zero feedback without changing damage or AI information rules.
-- Run test_feel18.py --matches, original suites and actual renders. Document that optional soundtrack is an event-timed mono PCM reconstruction, not device/spatial output or latency proof.
-- Preserve old branches/LICENSE/permissions. Feature branch and PR only; no force push, copied paid art, fonts, engines, caches, private saves or raw frame dumps in deliverables.
+Read docs/PHASE19.md, PHASE19_TEST_STATUS.md and ASTRA_START.md. Default scenes/phase19.tscn extends the verified Phase18 stack; previous scenes remain. Historical implementation boundaries are in PHASE13 through PHASE18.md and their test records.
 
-# Phase17 crafted environment rules
+## Preserve authority and existing assets
+- No changes to collision, navigation, hideout identity/ports, movement, HP, score, clocks, saved drawings/controls or game RNG for a graphics change.
+- Keep the original connected18-bone body/weights, Phase14 shader, Phase15 manor lightmaps/UV2/generator manifest, Phase16 animations/IK, Phase17 furnishings and Phase18 contact/audio behavior.
+- Original user strokes/grip/hit samples and fixed0.40 proportional lowered round-paw view stay. AttackSpec and confirmed contact remain the only damage/action clock. No new forced camera motion, FOV, time scale or root motion.
+- Hidden bodies, faces, grounding patches and trails must not leak occupancy. Public clues use original event snapshots. Preserve real stairs, hiding exits, peek LOS, role/charge-checked passages, practice and next-round-only workshop behavior.
+- Preserve remaps and SafeStore valid backups. No telemetry, credentials, remote player saves or paid asset APIs.
 
-Read PHASE17.md and PHASE17_TEST_STATUS.md first. New entry scenes/phase17.tscn only adds Environment17 to the existing Phase16 game/Phase15 graphics stack.
-- Keep the old326 static bake users, native assets and original generator hashes. New fixed furniture art is a probe-lit detail shell over old fixed cores, not a rebaked substitute. Never claim unrelated geometry uses the original UV2 lightmap.
-- Dynamic home replacements inherit the same parent/collider/ports and cast real direct shadows. Preserve RoundParcel and Grounding15, exclude clue/visibility/occupancy state from art recipes.
-- Keep new small geometry in authored furniture/wall envelopes, not in walking lanes or peek exits. Test capsule/floor clearance, unchanged nav and actual hiding/exit handlers.
-- Cache and material-batch recipes. Rebuild only on arena/furnishings identity changes, release stale references, preserve independent lighting/material/scenery toggles.
-- Exported native scenes are optional art inspection outputs; normal F5 needs no export. Fixed shell exports need their old cores; manual edits do not silently replace the runtime generator.
-- Preserve all character/GI/weapon/animation invariants below. Add environment tests and real same-light captures; do not replace actual source/engine verification with generated images.
-- No unrequested main merge, external assets, fonts, engines, caches, private saves, secrets or paid services.
+## New decoration and lighting
+- World19 owns ONLY new decorative pieces and authored direct-light profiles for six existing maps. The manor retains actual LightmapGI. Other-map direct light is not a GI rebake.
+- Only tagged small ornament gets a distance limit. Existing structural cover, hiding models, clues, characters and original silhouettes NEVER enter cull batches. Recipes do not read occupied/fake/hidden state.
+- Batch by cached mesh, immutable material/pigment and8m spatial cell. Keep finite transforms/full bounds. MultiMesh culls groups, not individual items. No per-frame batches, meshes, textures or PCM generation.
+- Preserve independent material, lighting, scenery and smash comparison. Session-local art options are not verified hardware tiers. Cull hysteresis in Compatibility is not alpha fading.
+- Fixed manor detail remains probe-lit shells over original baked cores. No unrelated model gets the old lightmap. Seeded furniture stays outside the static bake. Any future structural bake change must update native resources/provenance explicitly.
+- Cosmetic IK does not move/stretch authoritative weapons or capsules. Contact supplements are artistic patches, not SSAO/ray tracing. Preserve pause/mute and reduced-motion behavior.
 
-# Hide & Smashing — Phase16 animation and IK
-
-Read docs/PHASE16.md, PHASE16_TEST_STATUS.md and ASTRA_START.md. Default scenes/phase16.tscn opts into the new pose adapter. Previous scene entries remain; read PHASE13/14/15 docs before changing their assets.
-
-## Authority and preservation
-- Bone animation is cosmetic only. Never reparent/scale/move weapon_pivot, FacingRoot or colliders from animation. No root motion, damage/method tracks or independent hit timers.
-- AttackSpec elapsed and the confirmed contact/reaction age own action timing. HIT is sampled in the consume-event call. KO follows the existing short echo lifecycle, never delaying elimination.
-- Preserve original connected18-bone body/weights/native manifests, Phase14 shader, Phase15 lightmap/UV2/data hashes, fixed0.40 proportional lowered view weapons, original vectors/grips/hit samples and contact alignment.
-- Keep seven-map physics/navigation/hiding fingerprints, actual stairs, public-only clues/atlas and hidden body/face/shadow logic. Pose changes cannot reveal a hidden body or add free ambush damage.
-- Preserve score, damage, clocks, input remaps, bounded SafeStore backups, untimed practice and next-round-only captured workshop. No telemetry, paid assets/APIs, hidden remote persistence or new gameplay RNG use.
-
-## Motion implementation
-- Native clips target Skeleton3D bones only. The library is cached once; AnimationPlayers and poses are independent. One final pose owner follows the old compatibility bridge.
-- Positional IK clamps unreachable hands without limb scaling. Support hand must use an actual connected drawn shaft; release if it cannot reach. Do not add an invented handle or claim universal anatomical grip.
-- Ground rays and stance targets never move physics. Clear plants for air, concealment/transit, teleport/reset. Pause freezes final bones; reduced motion suppresses extra breathing/ears without changing rules or readable attack states.
-- Keep scene nodes/materials/mesh resources bounded when previews and ghosts change. Exported native editor previews are optional; normal F5 generates clips once and needs no bake/export.
-- Do not change lightmap source assets for animation. Lighting B/C still use identical direct lights/environment and differ in actual baked data. Contact supplements remain artistic patches, not SSAO/ray tracing.
-
-## Verification and delivery
-- Run test_animation16.py --matches plus every existing core/phase3/phase4/quality/graphics/maps/grip/smash/sync/studio/hideplay/premium/character13/material14/lighting15 runner. Preserve94 original contact assertions unchanged except scene selector, and do not count reuse as new definitions.
-- Verify actual floor movement on both stair directions, finite bounded bones, original authority, native clip export/reload, pause/reset and real contact onset. Headless matches may skip invisible pose updates; render/state checks separately exercise them.
-- Distinguish studio-pose inspection, open collision test pad and live-map gameplay captures. No generated imagery or retouched screenshots as implementation proof. Require exit codes, completion markers, bounded timeouts and clean script/shader-error logs.
-- Record rejected iterations, exact commits and source/asset hashes. Staged renders are not human playtests, all-drawing contact guarantees, commercial art approval or hardware FPS/audio benchmarks.
-- Preserve LICENSE, repository permissions and old branches; feature branch/PR only. No force push or unrequested main merge. Never include fonts, engines, .godot caches, raw frame dumps, secrets or player saves.
+## Validation and publishing
+- Compare all7 Phase18 collision/nav/hideout signatures against Phase19. Keep94 original contact predicates unchanged except new scene selection.
+- Run tools/test_world19.py --matches, all inherited core and Python runners, and actual --capture separately. Check exits, required markers and no script/shader errors. Headless assertions and render counters are not hardware FPS or human playtesting.
+- Keep actual source hashes, known warnings, rejected iterations and precise scope. No generated/retouched picture substitutes for runtime evidence.
+- Publish feature branches and PRs only. No force push, unrequested merge/deployment, payments, credentials, fonts, engine binaries, .godot caches, personal saves or raw frame dumps in deliverables.
+- Phase20 is now multiple outdoor natural maps per latest user instruction, not the earlier human-QA-only plan. Begin implementation after Phase19 code and PR are published/verified.
