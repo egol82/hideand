@@ -1,3 +1,15 @@
+# Phase21A — Pine first increment only
+
+Read docs/PHASE21A.md. Default scenes/phase21.tscn, target phase21/living-nature.
+- Preserve all Phase20 contracts below. The two authored trail sound zones and time-limited
+  contextual bushes are explicitly authorized gameplay additions, not generic art-only edits.
+- Reuse existing sound/track pools,search/peek/ambush/duel/capture and timing. No hidden-target radar.
+- Four-second allowance is per hider per round across both bushes,not per entry. Blocked exits
+  may never extend concealment. Preserve fake sites,clearance,original collision and10 maps.
+- No wetland/canyon/whole-seed-variation expansion in this first commit. Do not cite previous227 tests.
+- Run test_pine21.py,unchanged94 contact checks and affected hide/map regressions. Keep source ZIP
+  and an applicable new-file-inclusive patch BEFORE remote writes. Draft stacked PR only.
+
 # Hide & Smashing — Phase20 nature playgrounds
 
 Read docs/PHASE20.md, PHASE20_TEST_STATUS.md and ASTRA_START.md. Base is verified Phase19 (6f6c1e1; documentation7f51909), not a Phase18 recreation. Phase20 is the user's outdoor-map request, replacing the earlier proposed human-QA phase.

@@ -4,8 +4,9 @@ config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase20.tscn"
+run/main_scene="res://scenes/phase21.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
+; Phase21 first increment: Pine leaves and timed thickets. Other Phase20 systems retained.
 config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase20: pine forest, reed wetland and amber canyon; ten maps with original drawing combat."
 
 [display]
