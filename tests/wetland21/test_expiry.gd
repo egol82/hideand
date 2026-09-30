@@ -1,4 +1,5 @@
 extends SceneTree
+const ResetReady=preload("res://tests/seed21/round_ready.gd")
 ## Exact-frame regression: real listener completion may not revive an already expired clue.
 const Scene=preload("res://scenes/phase21.tscn")
 var game
@@ -12,10 +13,11 @@ func check(ok: bool,label: String) -> void:
 	print(("PASS: " if ok else "FAIL: ")+label)
 func fresh() -> void:
 	game.return_to_menu();game.select_map("reedwater_bend");game.set_mode("field")
-	game.start_match(true);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-17+i*1.5,0,13))
 	game.fighters[0].reset_fight(Vector3(-12,0,0));game.fighters[1].reset_fight(Vector3(-12,0,2))
 	game.hiding.skill_index=0
+	await ResetReady.positions(game)
 func run() -> void:
 	game=Scene.instantiate();root.add_child(game);game.automated=true
 	await process_frame;await process_frame;game.set_process(false)
@@ -24,7 +26,7 @@ func run() -> void:
 	for kind in ["water21","reed21"]:
 		var ttl:=3.0 if kind=="water21" else 1.5
 		for offset in [0.0,0.01,-0.01]:
-			fresh();await physics_frame
+			await fresh();await physics_frame
 			# Listen starts at t=4; sample at (7-ttl+offset); complete at t=7.
 			# +/-10ms distinguishes still live from exactly/just expired without float ambiguity.
 			h.tick(4.0)
@@ -50,7 +52,7 @@ func run() -> void:
 			if alive:
 				h.tick(0.011);h.skill_cooldown=0;game.heard_point=SENTINEL
 				check(h.investigate() and game.heard_point==SENTINEL and not h.tracks[0].node.visible,kind+" formerly live sample vanishes next frame")
-	fresh();h.sound_at(Vector3(-12,0,2),1,10,"water21");h.make_track(Vector3(-12,0,2),1,"water21")
+	await fresh();h.sound_at(Vector3(-12,0,2),1,10,"water21");h.make_track(Vector3(-12,0,2),1,"water21")
 	game.paused=true;h.tick(9)
 	check(h.elapsed==0 and h.tracks[0].node.visible and h.sounds.size()==1,"paused service neither expires nor resurrects a clue")
 	game.paused=false

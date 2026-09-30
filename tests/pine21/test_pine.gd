@@ -1,4 +1,5 @@
 extends SceneTree
+const ResetReady=preload("res://tests/seed21/round_ready.gd")
 const Scene=preload("res://scenes/phase21.tscn")
 const Old=preload("res://scenes/phase20.tscn")
 const OutdoorTests=preload("res://tests/outdoor20/test_outdoors.gd")
@@ -27,10 +28,11 @@ func geometry(a) -> Array:
 		collision.append([n.global_transform,sh.get_class(),sh.size if sh is BoxShape3D else [sh.radius,sh.height]])
 	return [a.spots.duplicate(),a.active_spots.duplicate(),a.obstacles.duplicate(),a.spawn_points.duplicate(),collision]
 func fresh(mode: String="field",hider: bool=true) -> void:
-	game.return_to_menu();game.select_map("pine_hollow");game.set_mode(mode);game.start_match(not hider);game.accept_drawing()
+	game.return_to_menu();game.select_map("pine_hollow");game.set_mode(mode);game.start_match(not hider);await ResetReady.wait(game);game.accept_drawing()
 	game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-4+i*2,0,3))
 	game._process(0)
+	await ResetReady.positions(game)
 func select_bush() -> int:
 	for id in Plans.BUSH_IDS:
 		if game.hiding.usable(id):return id
@@ -62,7 +64,7 @@ func run() -> void:
 			var original_zones: Array=game.arena.surface_zones.filter(func(z):return not str(z.id).begins_with("wetland21_"))
 			check(original_zones==baseline.arena.surface_zones,id+" pre-existing sound zones unchanged; Wetland21 additions checked separately")
 	baseline.queue_free();await process_frame
-	fresh();await physics_frame;await physics_frame
+	await fresh();await physics_frame;await physics_frame
 	check(game.arena.spots.size()==10 and h.homes.size()==10,"Pine still has ten original hide sites")
 	var connected=OutdoorTests.new();var free:=0
 	for x in range(game.arena.grid_size.x):
@@ -81,7 +83,7 @@ func run() -> void:
 		check(h.free_point(p+Vector3.FORWARD*2,-1),"dry-leaf strip has a walkable bypass")
 	var actor=game.fighters[0]
 	for quiet in [false,true]:
-		fresh();await physics_frame
+		await fresh();await physics_frame
 		actor.reset_fight(Vector3(-2.8,0,0));h.quiet_distance[0]=0
 		if quiet:Input.action_press("hs_quiet")
 		for i in range(90):
@@ -101,11 +103,11 @@ func run() -> void:
 		game.paused=false;h.tick(4)
 		check(not h.tracks[0].node.visible and h.tracks[0].time<0,"leaf lifetime expires both pixels and investigation")
 	# Real tracker tool consumes that existing trace; it does not know current target location.
-	fresh("field",false);await physics_frame
+	await fresh("field",false);await physics_frame
 	h.make_track(Vector3(0,0,0),1,"leaves");actor.reset_fight(Vector3(0,0,2));h.skill_index=1
 	check(h.investigate() and game.heard_point==Vector3.ZERO,"original tracker skill can inspect a leaf trace")
 	# Cosmetic settings cannot remove gameplay clues; hidden/air/teleport do not emit footsteps.
-	fresh();await physics_frame;actor.reset_fight(Vector3(0,0,0))
+	await fresh();await physics_frame;actor.reset_fight(Vector3(0,0,0))
 	for i in range(12):actor.step(1.0/60,Vector3.ZERO,Vector3.FORWARD)
 	game.preferences.volume=0;game.preferences.reduced_motion=true;game.preferences.feedback_strength=0
 	h.quiet_distance[0]=1.39;actor.old_position=actor.position-Vector3.RIGHT*0.03;h.step_record(0)
@@ -115,7 +117,7 @@ func run() -> void:
 	actor.set_hidden(false);actor.old_position=actor.position-Vector3.RIGHT*5;h.step_record(0)
 	check(h.track_cursor==count_before,"teleport emits no step clue")
 	for mode in ["field","classic"]:
-		fresh(mode);await physics_frame;var bush:=select_bush();var entry: Vector3=h.homes[bush].entry
+		await fresh(mode);await physics_frame;var bush:=select_bush();var entry: Vector3=h.homes[bush].entry
 		check(bush>=0 and enter(0,bush),mode+" ordinary hide handler enters a valid bush")
 		check(not actor.body_art.body.is_visible_in_tree(),mode+" full body hidden, not emissive/outlining")
 		check(not h.hide_actor(game.rules.seeker,bush),mode+" seeker cannot use hider-only concealment")
@@ -133,7 +135,7 @@ func run() -> void:
 		check(enter(0,normal),mode+" ordinary cover unaffected by shrub budget")
 		h.leave(0)
 		# Direct search uses same existing 0.65s action and REVEAL/DUEL pipeline.
-		fresh(mode);await physics_frame;bush=select_bush();check(enter(0,bush),mode+" reconfigured round resets four-second allowance")
+		await fresh(mode);await physics_frame;bush=select_bush();check(enter(0,bush),mode+" reconfigured round resets four-second allowance")
 		var hunter=game.fighters[game.rules.seeker];hunter.reset_fight(h.homes[bush].entry+Vector3.BACK*1.7)
 		game._inspect(game.rules.seeker,bush);check(h.inspecting.has(game.rules.seeker),mode+" existing timed inspection starts")
 		h.tick(0.7);check(game.rules.phase==game.Rules.Phase.REVEAL and game.rules.opponent==0,mode+" inspection defeats concealment via original discover")
@@ -144,7 +146,7 @@ func run() -> void:
 		for i in range(3):game.rules.register_hits(hits)
 		check(not game.rules.alive[0],mode+" original three-hit capture rule still resolves")
 	# Block both exits: time limit still exposes at its present position; no clipping teleport.
-	fresh();await physics_frame;var bush:=select_bush();check(enter(0,bush),"blocked-exit setup enters")
+	await fresh();await physics_frame;var bush:=select_bush();check(enter(0,bush),"blocked-exit setup enters")
 	var before: Vector3=actor.position
 	var blockers: Array=[]
 	for exit_at in h.homes[bush].exits:
@@ -155,7 +157,7 @@ func run() -> void:
 	for b in blockers:b.queue_free()
 	await physics_frame;await process_frame
 	# Repeated seeds reset budgets but never duplicate geometry or zones. No new seed variation yet.
-	fresh();await physics_frame;var nodes_before:=node_count(game.arena)
+	await fresh();await physics_frame;var nodes_before:=node_count(game.arena)
 	for seed_value in [7,7,91]:
 		h.configure(seed_value)
 		check(node_count(game.arena)==nodes_before,"round reset reuses forest art, seed="+str(seed_value))

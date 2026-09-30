@@ -1,4 +1,5 @@
 extends SceneTree
+const ResetReady=preload("res://tests/seed21/round_ready.gd")
 const Scene=preload("res://scenes/phase21.tscn")
 const Wet=preload("res://scripts/wetland21/services.gd")
 const Pine=preload("res://scripts/pine21/services.gd")
@@ -22,10 +23,11 @@ func authority() -> Array:
 	for a in game.fighters:data.append([a.transform,a.velocity,a.weapon.transform,a.hit_samples.duplicate(),a.weapon_data.to_dictionary(),a.collision_layer,a.collision_mask])
 	return data
 func fresh(mode: String="field",seeker: bool=true) -> void:
-	game.return_to_menu();game.select_map("reedwater_bend");game.set_mode(mode);game.start_match(seeker);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.return_to_menu();game.select_map("reedwater_bend");game.set_mode(mode);game.start_match(seeker);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-18+i*1.4,0,14))
 	game.preferences.reduced_motion=false;game.preferences.feedback_strength=1;game.preferences.volume=0.5
 	game._process(0)
+	await ResetReady.positions(game)
 func move(id: int,start: Vector3,dir: Vector3,quiet: bool=false) -> void:
 	var a=game.fighters[id];a.reset_fight(start)
 	if quiet:Input.action_press("hs_quiet")
@@ -40,7 +42,7 @@ func run() -> void:
 	var h=game.hiding
 	check(h is Wet and h is Pine,"wet service extends, rather than replaces, tested Pine behavior")
 	check(Catalog.IDS.size()==9 and Catalog.IDS.has("reedwater_bend"),"catalog9+Manor remains ten distinct maps")
-	fresh();await physics_frame;await physics_frame
+	await fresh();await physics_frame;await physics_frame
 	var helpers=PineTests.new();var conn=OutdoorTests.new()
 	var original=preload("res://scenes/phase20.tscn").instantiate();root.add_child(original);original.automated=true
 	await process_frame;await process_frame;original.set_process(false)
@@ -71,7 +73,7 @@ func run() -> void:
 	original.queue_free();helpers.free();conn.free();await process_frame
 	# Both teams and quiet player use the same real movement sampler, not direct injected clues.
 	for quiet in [false,true]:
-		fresh("field",false);await physics_frame;await physics_frame
+		await fresh("field",false);await physics_frame;await physics_frame
 		await move(0,Vector3(-2.8,0,-2.9),Vector3.RIGHT,quiet)
 		check(h.track_cursor==1 and h.sounds.size()==1,"one sampled wet step, no duplicate trace or sound; quiet="+str(quiet))
 		check(h.tracks[0].kind=="water21" and h.wet_visuals[0].visible,"actual water step selects pooled water glyph")
@@ -85,7 +87,7 @@ func run() -> void:
 		game.paused=false;h.tick(2.91)
 		check(not h.tracks[0].node.visible and h.tracks[0].time<0 and h.sounds.is_empty(),"three-second expiry clears visual, tracker eligibility and water sound memory together")
 	# Water on boots persists briefly on dry land, but no new emission timer follows a character.
-	fresh();await physics_frame;await move(1,Vector3(-2.8,0,-2.9),Vector3.RIGHT)
+	await fresh();await physics_frame;await move(1,Vector3(-2.8,0,-2.9),Vector3.RIGHT)
 	var initial: int=h.track_cursor
 	for i in range(70):
 		game.fighters[1].step(1.0/60,Vector3.BACK*0.6,Vector3.BACK);game._update_actor_events(1)
@@ -99,14 +101,14 @@ func run() -> void:
 		if i%15==0:await physics_frame
 	check(h.tracks[posmod(h.track_cursor-1,24)].kind=="step","drying ends the wet-boot effect without changing normal footprints")
 	# Existing investigator can find a fresh movement trace, but cannot find its expired slot.
-	fresh();await physics_frame;await move(1,Vector3(-2.8,0,-2.9),Vector3.RIGHT)
+	await fresh();await physics_frame;await move(1,Vector3(-2.8,0,-2.9),Vector3.RIGHT)
 	var track_at: Vector3=h.tracks[0].at;game.fighters[0].reset_fight(track_at+Vector3.BACK*1.6);h.skill_index=1
 	check(h.investigate() and game.heard_point==track_at,"original tracker tool finds real fresh wet print through its LOS contract")
 	h.tick(3.01);h.skill_cooldown=0;game.heard_point=Vector3(99,99,99)
 	check(h.investigate() and game.heard_point==Vector3(99,99,99),"expired wet slot is no longer returned by real investigation")
 	# Reed stems remain at a fixed world location; their short bend uses a past motion direction.
 	for quiet in [false,true]:
-		fresh("field",false);await physics_frame;await move(0,Vector3(4.9,0,-8.5),Vector3.BACK,quiet)
+		await fresh("field",false);await physics_frame;await move(0,Vector3(4.9,0,-8.5),Vector3.BACK,quiet)
 		check(h.sounds.size()==1 and h.sounds[0].kind=="reed21" and h.track_cursor==1,"one inherited step drives reed clue; quiet="+str(quiet))
 		check(h.tracks[0].kind=="reed21" and h.reed_visuals[0].visible,"reed movement has a bounded ground trace even in comfort mode")
 		var at: Vector3=h.tufts[0].position;var before:=authority();h.tick(0.1)
@@ -119,13 +121,13 @@ func run() -> void:
 		check(h.tufts[0].rotation==pose,"paused reed pose does not advance")
 		game.paused=false;h.tick(1.26)
 		check(h.tufts[0].rotation==Vector3.ZERO and h.tracks[0].time<0 and not h.tracks[0].node.visible and h.sounds.is_empty(),"reed sway, visual trace, sound and investigation end at1.5s")
-	fresh();await physics_frame;await move(1,Vector3(4.9,0,-8.5),Vector3.BACK)
+	await fresh();await physics_frame;await move(1,Vector3(4.9,0,-8.5),Vector3.BACK)
 	track_at=h.tracks[0].at;game.fighters[0].reset_fight(track_at+Vector3.RIGHT*1.7);h.skill_index=1
 	check(h.investigate() and game.heard_point==track_at,"same tracker can inspect fresh bent-reed evidence")
 	h.tick(1.51);h.skill_cooldown=0;game.heard_point=Vector3(99,99,99)
 	check(h.investigate() and game.heard_point==Vector3(99,99,99),"expired reed cannot become a stale investigation result")
 	# Settings and guards do not leak hidden/current actor positions.
-	fresh();await physics_frame;game.preferences.reduced_motion=true;game.preferences.feedback_strength=0;game.preferences.volume=0
+	await fresh();await physics_frame;game.preferences.reduced_motion=true;game.preferences.feedback_strength=0;game.preferences.volume=0
 	await move(1,Vector3(4.9,0,-8.5),Vector3.BACK);h.tick(0.1)
 	check(h.tufts[0].rotation==Vector3.ZERO and h.reed_visuals[0].visible and h.sounds.size()==1,"comfort removes sway but keeps the same finite visible/audible-information clue")
 	var actor=game.fighters[1];var emitted: int=h.track_cursor
@@ -135,12 +137,12 @@ func run() -> void:
 	check(h.track_cursor==emitted,"teleport is not a movement clue")
 	actor.position.y=2;actor.step(1.0/60,Vector3.ZERO,Vector3.BACK);h.step_record(1)
 	check(h.track_cursor==emitted,"airborne actor does not disturb water/reeds")
-	fresh();await physics_frame
+	await fresh();await physics_frame
 	actor.reset_fight(Vector3(4.9,0,-7));for i in range(12):actor.step(1.0/60,Vector3.ZERO,Vector3.BACK)
 	for i in range(20):actor.old_position=actor.position;h.step_record(1);h.tick(0.02)
 	check(h.sounds.is_empty() and h.track_cursor==0,"stationary occupant never continuously triggers a patch")
 	for mode in ["field","classic"]:
-		fresh(mode);await physics_frame;await move(1,Vector3(-2.8,0,-2.9),Vector3.RIGHT)
+		await fresh(mode);await physics_frame;await move(1,Vector3(-2.8,0,-2.9),Vector3.RIGHT)
 		var spot:=-1
 		for home in h.homes:
 			if h.usable(home.id):spot=home.id;break
@@ -157,7 +159,7 @@ func run() -> void:
 		for i in range(3):game.rules.register_hits(hits)
 		check(not game.rules.alive[1],mode+" original three-hit capture, not an environmental shortcut")
 	# Lifecycle: configure twice, reset, return to forest, then wetlands; no new randomization.
-	fresh();await physics_frame;var nodes:=count(game.arena);var geom:=PineTests.new()
+	await fresh();await physics_frame;var nodes:=count(game.arena);var geom:=PineTests.new()
 	var snapshot:=geom.geometry(game.arena)
 	for seed_value in [7,7,91,0]:
 		h.configure(seed_value)

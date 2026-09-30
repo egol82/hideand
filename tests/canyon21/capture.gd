@@ -1,4 +1,5 @@
 extends SceneTree
+const ResetReady=preload("res://tests/seed21/round_ready.gd")
 ## Actual passage and timed wind state rendered with Godot; camera placement is diagnostic.
 const Scene=preload("res://scenes/phase21.tscn")
 const C=preload("res://scripts/canyon21/services.gd")
@@ -19,7 +20,7 @@ func difference(a: Image,b: Image) -> float:
 			var c:=a.get_pixel(x,y);var d:=b.get_pixel(x,y);value+=absf(c.r-d.r)+absf(c.g-d.g)+absf(c.b-d.b);n+=3
 	return value/maxi(1,n)
 func fresh() -> void:
-	game.return_to_menu();game.select_map("amber_canyon");game.start_match(true);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.return_to_menu();game.select_map("amber_canyon");game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-18+i*1.5,0,15))
 	game._process(0);game.get_node("ToyStudio")._process(0)
 	await physics_frame;await physics_frame

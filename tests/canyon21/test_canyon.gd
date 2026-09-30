@@ -1,4 +1,5 @@
 extends SceneTree
+const ResetReady=preload("res://tests/seed21/round_ready.gd")
 const Scene=preload("res://scenes/phase21.tscn")
 const Service=preload("res://scripts/canyon21/services.gd")
 const PineTests=preload("res://tests/pine21/test_pine.gd")
@@ -13,11 +14,12 @@ func check(ok: bool,label: String) -> void:
 	if not ok:failures+=1
 	print(("PASS: " if ok else "FAIL: ")+label)
 func fresh(mode: String="field",seeker: bool=true) -> void:
-	game.return_to_menu();game.select_map("amber_canyon");game.set_mode(mode);game.start_match(seeker);game.accept_drawing()
+	game.return_to_menu();game.select_map("amber_canyon");game.set_mode(mode);game.start_match(seeker);await ResetReady.wait(game);game.accept_drawing()
 	game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-18+i*1.5,0,15))
 	game.preferences.reduced_motion=false;game.preferences.volume=0.5;game.preferences.feedback_strength=1
 	game._process(0)
+	await ResetReady.positions(game)
 func settle(id: int,p: Vector3) -> void:
 	var a=game.fighters[id];a.reset_fight(p)
 	for i in range(12):a.step(1.0/60,Vector3.ZERO,Vector3.BACK)
@@ -50,7 +52,7 @@ func run() -> void:
 		check(helpers.geometry(game.arena)==helpers.geometry(old.arena),mid+" original colliders/spawns/cover/entries unchanged")
 		check(h.canyon_active==(mid=="amber_canyon"),mid+" canyon service is opt-in")
 	old.queue_free();helpers.free();await process_frame
-	fresh();await physics_frame;await physics_frame
+	await fresh();await physics_frame;await physics_frame
 	check(h.canyon_art.find_children("*","CollisionObject3D",true,false).is_empty(),"new lane and eight wind toys add no physical barriers")
 	check(h.canyon_art.find_children("WindToy*","Node3D",true,false).size()==8,"wind toys are a fixed pool of eight")
 	var conn=OutdoorTests.new();var free:=0
@@ -94,7 +96,7 @@ func run() -> void:
 	print("CANYON21_WALK_SECONDS: ",walking)
 	for mode in ["field","classic"]:
 		for seeker in [true,false]:
-			fresh(mode,seeker);await physics_frame;settle(0,Service.LANE_ENDS[0])
+			await fresh(mode,seeker);await physics_frame;settle(0,Service.LANE_ENDS[0])
 			var original_hp=game.rules.hp.duplicate();var original_grace=game.rules.grace.duplicate()
 			# Invoke the original E interaction handler rather than inserting a transit job.
 			game._interact()
@@ -116,7 +118,7 @@ func run() -> void:
 			check(h.tracks[0].time<0 and not h.tracks[0].node.visible,"launch clue expires visually and for investigation")
 			check(h.sounds.filter(func(s):return s.kind=="lane21").is_empty(),"lane launch/landing sounds expire without tracking the rider")
 		# Original hide -> timed inspect -> duel/capture still works in canyon.
-		fresh(mode);await physics_frame
+		await fresh(mode);await physics_frame
 		var spot:=-1
 		for home in h.homes:
 			if h.usable(home.id):spot=home.id;break
@@ -133,7 +135,7 @@ func run() -> void:
 		for i in range(3):game.rules.register_hits(hits)
 		check(not game.rules.alive[1],mode+" unchanged three-hit capture rule")
 	# Blocked start/late occupancy. There is no gate that can close on anybody.
-	fresh();await physics_frame;settle(0,Service.LANE_ENDS[0]);settle(1,Vector3(0,0,4));await physics_frame
+	await fresh();await physics_frame;settle(0,Service.LANE_ENDS[0]);settle(1,Vector3(0,0,4));await physics_frame
 	check(not h.travel(0,h.lane(0)) and h.lane_uses==0,"occupied swept corridor refuses launch without spending a use")
 	settle(1,Vector3(15,0,14));await physics_frame;check(h.travel(0,h.lane(0)),"cleared corridor allows retry")
 	h.tick(0.15);settle(1,Vector3(0,0,1.4));await physics_frame;var stop=game.fighters[0].position;h.tick(0.55)
@@ -141,11 +143,11 @@ func run() -> void:
 	check(h.free_point(game.fighters[0].position,0),"aborted rider is still capsule-clear")
 	game.fighters[0].step(1.0/60,Vector3.LEFT,Vector3.LEFT)
 	check(game.fighters[0].position.x<stop.x,"aborted rider can move out sideways immediately")
-	fresh();await physics_frame;settle(0,Service.LANE_ENDS[0]);h.travel(0,h.lane(0));h.tick(0.2)
+	await fresh();await physics_frame;settle(0,Service.LANE_ENDS[0]);h.travel(0,h.lane(0));h.tick(0.2)
 	game.fighters[0].take_hit(Vector3.RIGHT);stop=game.fighters[0].position;h.tick(0.1)
 	check(not h.transit.has(0) and game.fighters[0].position==stop and game.fighters[0].knock_velocity.length()>0,"damage cancels propulsion and preserves original knockback")
 	# Actual swept melee against a launched target in the unmodified DUEL contact path.
-	fresh();await physics_frame;game.rules.discover(1);game.rules.tick(game.rules.time_left+0.01)
+	await fresh();await physics_frame;game.rules.discover(1);game.rules.tick(game.rules.time_left+0.01)
 	settle(1,Service.LANE_ENDS[0]);settle(0,Service.LANE_ENDS[0]+Vector3.FORWARD*1.3)
 	check(h.travel(1,h.lane(0)),"duel target may choose exposed route without immunity")
 	game.fighters[0].handling="quick";game.fighters[0].begin_swing()
@@ -156,7 +158,7 @@ func run() -> void:
 		if game.rules.hp[1]<3:break
 	check(game.rules.hp[1]==2,"original swept duel attack damages a rider with exactly one ordinary hit")
 	h.tick(0.016);check(not h.transit.has(1),"actual contact releases transit instead of ignoring hit")
-	fresh();await physics_frame;settle(0,Service.LANE_ENDS[0]);var fake=h.lane(0);fake.to=Vector3(18,0,15)
+	await fresh();await physics_frame;settle(0,Service.LANE_ENDS[0]);var fake=h.lane(0);fake.to=Vector3(18,0,15)
 	check(not h.travel(0,fake),"caller cannot substitute arbitrary teleport endpoint")
 	# Public periodic wind is bounded, stateless with respect to occupants, and truly moves props.
 	var nodes:=count(game);var stable:=toy_poses();var before:=authority()

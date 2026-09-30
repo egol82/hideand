@@ -1,4 +1,5 @@
 extends SceneTree
+const ResetReady=preload("res://tests/seed21/round_ready.gd")
 ## Actual renderer; same-camera round layouts and actual capsule-clear first-person views.
 const Scene=preload("res://scenes/phase21.tscn")
 const Plans=preload("res://scripts/seed21/layouts.gd")
@@ -28,6 +29,7 @@ func run() -> void:
 		for r in [0,1]:
 			game.return_to_menu();game.select_map(mid);game.rng.seed=8027;game.start_match(false)
 			if r>0:game.rules.round_index=r;game._prepare_round()
+			await ResetReady.wait(game)
 			if not game.round_layout.applied:push_error("Renderer has no actual seeded layout");quit(1);return
 			game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 			game._process(0);studio._process(0)
