@@ -1,3 +1,17 @@
+# Phase21C — Canyon increment and Wetland expiry boundary
+
+Read docs/PHASE21C.md. Keep same phase21/living-nature and draft PR21, stacked on Phase20.
+- Preserve Pine/Wet tests and numeric10-map geometry contracts; no remakes or new seed expansion.
+- Reuse contextual travel: conservative full/next-segment capsule checks, occupancy refusal,
+  same point on abort, no hidden status/grace and original hit/knockback behavior. No closing gate.
+- Eight non-colliding wind toys return to authored transforms; cues store fixed past event positions.
+  No live enemy radar, unbounded physical props, camera shake, footprint suppression or new damage.
+- Expire short clues BEFORE inherited listener completion; freeze expiry on pause/inactive ticks.
+  Keep the39-case wet boundary regression, including same-frame and just-before/after controls.
+- Existing actor/map/art/GI contracts stay intact. Source ZIP/new-file-inclusive patch and actual
+  logs come before remote publication. No fake CI success or human/hardware approval.
+- Same stacked draft PR only. Full seed variation is explicitly deferred.
+
 # Phase21B — Wetland second increment
 
 Read docs/PHASE21B.md; same scenes/phase21.tscn and phase21/living-nature branch.

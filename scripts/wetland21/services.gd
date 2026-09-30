@@ -92,19 +92,33 @@ func make_track(p: Vector3,id: int,kind: String) -> void:
 		elif kind=="leaves":child.visible=child==leaf_visuals[slot]
 		else:child.visible=child not in [wet_visuals[slot],reed_visuals[slot],leaf_visuals[slot]]
 
+func short_clue_lifetime(kind: String) -> float:
+	return WATER_SECONDS if kind=="water21" else (REED_SECONDS if kind=="reed21" else -1.0)
+
+func advances_time(delta: float) -> bool:
+	return is_finite(delta) and delta>0 and not game.paused and not game.practice_mode and game.rules.phase in [game.Rules.Phase.HIDE,game.Rules.Phase.SEEK,game.Rules.Phase.REVEAL,game.Rules.Phase.DUEL]
+
+func expire_short_clues(at_time: float) -> void:
+	for t in tracks:
+		var ttl:=short_clue_lifetime(t.get("kind",""))
+		if ttl>0 and at_time-t.time>=ttl:
+			t.time=-100.0;t.node.visible=false
+	for i in range(sounds.size()-1,-1,-1):
+		var s:=sounds[i];var ttl:=short_clue_lifetime(s.kind)
+		if ttl>0 and at_time-s.time>=ttl:sounds.remove_at(i)
+
+func investigate() -> bool:
+	expire_short_clues(elapsed)
+	return super.investigate()
+
 func tick(delta: float) -> void:
-	if not is_finite(delta) or delta<=0:return
+	if not advances_time(delta):return
+	# The base tick increments elapsed BEFORE resolving a completed listen. Prune against
+	# that upcoming time first, not afterwards, or expired water/reeds can renew HUD memory.
+	expire_short_clues(elapsed+delta)
 	var before:=elapsed
 	super.tick(delta)
 	if not wetland_active or elapsed==before:return
-	for t in tracks:
-		var ttl: float=WATER_SECONDS if t.get("kind","")=="water21" else (REED_SECONDS if t.get("kind","")=="reed21" else -1.0)
-		if ttl>0 and elapsed-t.time>=ttl:
-			t.time=-100.0;t.node.visible=false # Same expiry for pixels AND inherited investigation.
-	for i in range(sounds.size()-1,-1,-1):
-		var s:=sounds[i]
-		var ttl: float=WATER_SECONDS if s.kind=="water21" else (REED_SECONDS if s.kind=="reed21" else -1.0)
-		if ttl>0 and elapsed-s.time>=ttl:sounds.remove_at(i)
 	for i in range(tufts.size()):
 		if not is_instance_valid(tufts[i]):continue
 		var age: float=elapsed-reed_events[i].time

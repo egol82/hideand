@@ -1,3 +1,11 @@
+# Current increment: Phase21C
+
+Read PHASE21C.md first. Current draft PR21 base remains phase20/nature-playgrounds.
+Canyon adds exposed1.35s travel with occupancy/knockback cancellation and eight bounded wind toys.
+Wetland's listener expiry order is corrected with a failing-before/passing-after boundary fixture.
+Run test_canyon21.py --matches --regressions; use --capture-only for real rendered evidence.
+No full Phase21 completion or new seed variation. Preserve earlier files and read exact delivery/CI evidence.
+
 # Phase20 handoff
 
 Start from phase20/nature-playgrounds/scenes/phase20.tscn. Read PHASE20.md and PHASE20_TEST_STATUS.md. Prior Phase19 code6f6c1e1 and its successful CI were recovered; do not recreate earlier milestones.
