@@ -1,0 +1,90 @@
+name: Phase21 complete nature interactions and seeded rounds
+on:
+  push:
+    branches: ['phase21/living-nature']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pine21-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+      - run: python tools/install_godot15.py
+      - name: Original character and manor GI manifests
+        shell: python
+        run: |
+          import hashlib,json,pathlib
+          for manifest in ['assets/character13/manifest.json','assets/lighting15/manifest.json']:
+              for name,digest in json.loads(pathlib.Path(manifest).read_text()).items():
+                  assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
+      - name: Seeded safe rounds and preserved Canyon/Wet/Pine/sync plus twenty matches
+        run: python tools/test_seed21.py --matches
+      - name: Real round-reset regression (seed17 and seed0, both modes)
+        run: python tools/test_seed21_rounds.py --skip-import
+      - name: Affected hiding and map-registry regressions
+        shell: python
+        run: |
+          import subprocess,sys
+          subprocess.run([sys.executable,'tools/test_hideplay.py'],check=True)
+          subprocess.run([sys.executable,'tools/test_maps.py','--skip-matches'],check=True)
+          subprocess.run([sys.executable,'tools/test_outdoor20.py','--skip-import'],check=True)
+          subprocess.run([sys.executable,'tools/verify_project.py'],check=True)
+      - name: Actual renderer evidence
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk
+          xvfb-run -a python tools/test_seed21.py --skip-import --capture-only
+          xvfb-run -a python tools/test_canyon21.py --skip-import --capture-only
+          xvfb-run -a python tools/test_wetland21.py --skip-import --capture
+          xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/pine21/capture.gd -- --quality-test
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase21_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/seed21-commit.txt
+          git diff --binary --full-index 63dad42af56146af54ffc2be46cc90d33d55474c HEAD > ci-artifacts/HideAndSmashing_Phase21_SeedFix.patch
+          git bundle create ci-artifacts/HideAndSmashing_Phase21_SeedFix_Increment.bundle HEAD ^63dad42af56146af54ffc2be46cc90d33d55474c
+          git bundle verify ci-artifacts/HideAndSmashing_Phase21_SeedFix_Increment.bundle
+      - name: Retain evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seed21-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
+
+  reset_472:
+    name: Round reset 4.7.2 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      GODOT_TEST_VERSION: '4.7.2'
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/install_godot15.py
+      - name: Actual reset, genuine occupancy and repeatable four-round matches
+        run: python tools/test_seed21_rounds.py
+      - name: Preserve version-specific evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seed21-reset-4.7.2-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7

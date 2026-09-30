@@ -3,8 +3,10 @@ import hashlib, os, pathlib, urllib.request, zipfile
 folder=pathlib.Path(os.environ['RUNNER_TEMP'])/'lighting15-godot'
 folder.mkdir(exist_ok=True)
 platform='win64.exe' if os.name=='nt' else 'linux.x86_64'
-name='Godot_v4.4.1-stable_'+platform+'.zip'
-base='https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/'
+version=os.environ.get('GODOT_TEST_VERSION','4.4.1')
+assert version in ['4.4.1','4.7.2'], 'Unsupported CI engine version'
+name='Godot_v'+version+'-stable_'+platform+'.zip'
+base='https://github.com/godotengine/godot-builds/releases/download/'+version+'-stable/'
 archive=folder/name
 with urllib.request.urlopen(base+name,timeout=120) as response:archive.write_bytes(response.read())
 with urllib.request.urlopen(base+'SHA512-SUMS.txt',timeout=30) as response:lines=response.read().decode().splitlines()
