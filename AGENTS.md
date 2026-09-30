@@ -1,3 +1,20 @@
+# Phase21B — Wetland second increment
+
+Read docs/PHASE21B.md; same scenes/phase21.tscn and phase21/living-nature branch.
+This increment explicitly authorizes Reedwater additions; Pine-only scope below is historical.
+- Preserve Pine implementation, tests and four-second shared thicket budget. Reuse its service
+  subclass and original movement sampler,24 tracks/32 sounds,investigation and round timers.
+- Wet footprints live3s; wet boots expire2.5s after actual movement in water. Reeds react for1.5s.
+  Rendering and investigation must expire together. Never follow current hidden-player positions.
+- Four short sparse reed tufts are not cover or physics bodies; retain original opaque cores,
+  actual collider/nav/home/spawn fingerprints and all10 maps. No new swimming or slowdown.
+- No triggers from stationary,hidden,dead,airborne,transit or teleport actors. Pause freezes time.
+  Comfort disables sway only,not finite visual clues or hearing authority.
+- Run wetland21 focused/Pine126/sync94 tests and affected hide/maps/outdoor regressions.
+  Preserve old assertions; their original-zone check excludes only separately verified new wet zones.
+- Save source ZIP,new-file-inclusive patch and actual evidence before remote publishing.
+  Same stacked draft PR only; canyon and broad seed variation are NOT part of this increment.
+
 # Phase21A — Pine first increment only
 
 Read docs/PHASE21A.md. Default scenes/phase21.tscn, target phase21/living-nature.

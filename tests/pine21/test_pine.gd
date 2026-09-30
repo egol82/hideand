@@ -58,7 +58,9 @@ func run() -> void:
 		check(game.arena.map_id==id,id+" resolves to itself")
 		check(geometry(game.arena)==geometry(baseline.arena),id+" same collision,spawn,cover and hide entries as Phase20")
 		check(h.pine_active==(id=="pine_hollow"),id+" forest mechanism gate")
-		if id!="pine_hollow":check(game.arena.surface_zones==baseline.arena.surface_zones,id+" sound terrain unchanged")
+		if id!="pine_hollow":
+			var original_zones: Array=game.arena.surface_zones.filter(func(z):return not str(z.id).begins_with("wetland21_"))
+			check(original_zones==baseline.arena.surface_zones,id+" pre-existing sound zones unchanged; Wetland21 additions checked separately")
 	baseline.queue_free();await process_frame
 	fresh();await physics_frame;await physics_frame
 	check(game.arena.spots.size()==10 and h.homes.size()==10,"Pine still has ten original hide sites")
