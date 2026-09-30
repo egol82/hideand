@@ -58,8 +58,11 @@ func run() -> void:
 	var pad:=StaticBody3D.new();game.add_child(pad);pad.position=Vector3(0,30,0);pad.collision_layer=1
 	var cs:=CollisionShape3D.new();var shape:=BoxShape3D.new();shape.size=Vector3(30,0.2,30);cs.shape=shape;pad.add_child(cs)
 	Art.box(pad,Vector3.ZERO,shape.size,Color("647c74"),"wood",0.02)
+	# Let the physics server register the newly created inspection floor before settling.
+	await physics_frame;await physics_frame
 	actor.reset_fight(Vector3(-3,30.1,0));actor.show_weapon(false)
 	for i in range(12):actor.step(1.0/60,Vector3.ZERO,Vector3.BACK)
+	if not actor.is_on_floor():push_error("Inspection actor did not settle on the real test floor");quit(1);return
 	studio._process(0)
 	for i in range(45):
 		actor.step(1.0/30,Vector3.RIGHT*0.55,Vector3.BACK)
