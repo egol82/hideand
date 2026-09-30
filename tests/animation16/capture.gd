@@ -79,6 +79,9 @@ func run() -> void:
 		if i==2:await shot("live_run")
 		await frame()
 	pad.queue_free();await process_frame
+	# Restore the gameplay camera after the explicitly separate tracking inspection shot.
+	game.camera.transform=Transform3D.IDENTITY
+	game.ui.visible=true
 	# Shared physics input creates the attack, contact, reaction and recovery.
 	game.return_to_menu();game.select_map("toy_home");game.start_practice();game.accept_drawing()
 	var fx=game.get_node("SmashDirector");var count: int=fx.handled
@@ -87,6 +90,8 @@ func run() -> void:
 		game.fighters[0].reset_fight(Vector3(0,0,1));game.fighters[1].reset_fight(Vector3(0,0,2.3))
 		game.fighters[0].handling=["quick","balanced","heavy"][i]
 		game.rig.face(Vector3.BACK);game._process(0);studio._process(0)
+		var target_view: Vector2=game.camera.unproject_position(game.fighters[1].global_position+Vector3.UP)
+		if not Rect2(Vector2.ZERO,Vector2(1280,720)).has_point(target_view):push_error("Combat target is outside the actual restored camera");quit(1);return
 		var event:=InputEventMouseButton.new();event.button_index=MOUSE_BUTTON_LEFT;event.pressed=true;game._unhandled_input(event)
 		var recorded:=false
 		for j in range(30):
