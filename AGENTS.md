@@ -1,3 +1,19 @@
+# Phase21D — approved final seed/integration increment
+
+Read docs/PHASE21D.md. This latest explicit user scope supersedes historical no-seed notes below.
+- Preserve the existing six mechanics and all their timers/predicates. Same branch and stacked draft PR.
+- New layout code may add EXACTLY two bounded cover bundles only at DRAW after original round reset.
+  No mid-play moving blockers, no mutation of old colliders, surface zones, ports, spawns or landmarks.
+- Use original match seed/round lifecycle without consuming its RNG state. Version the pure socket
+  selector; same inputs reproduce; finite9-template collisions between different seeds are allowed.
+- Runtime validation must protect every old port, central arena and lane, test actual occupancy and
+  full free-cell connectivity. Unsafe future geometry fails open; never relocate an occupant.
+- Clear AStarGrid2D before same-size rebuilds so old solid cells cannot accumulate. Reuse two bodies.
+- Existing Wet live-geometry assertion now requires the COMPLETE original numeric geometry plus
+  exactly the selected two boxes/rectangles. No arbitrary filtering or skipped old contracts.
+- Keep sourceZIP, full-index new-file patch, incremental bundle and actual log/render evidence.
+  Report exact remote HEAD/tree and its CI, not historical success. No merge/deploy or new scope.
+
 # Phase21C — Canyon increment and Wetland expiry boundary
 
 Read docs/PHASE21C.md. Keep same phase21/living-nature and draft PR21, stacked on Phase20.

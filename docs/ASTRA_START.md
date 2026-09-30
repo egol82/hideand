@@ -1,3 +1,13 @@
+# Phase21 final handoff — seeded natural rounds
+
+Read PHASE21D.md and AGENTS.md first. Same scenes/phase21.tscn; stacked draft PR21 stays on Phase20.
+Reuse the exact verified1cfdfd70 base. New seed21/game.gd hooks only round preparation/menu teardown.
+Existing fake-home RNG, six natural interactions, original colliders and10maps remain. Only two
+validated extra cover bundles are added per nature map in DRAW. Full runtime connectivity/occupancy
+checks and deterministic versioned sockets are mandatory. Do not broaden into new maps or mechanics.
+Run test_seed21.py --matches --regressions and capture-only; preserve unchanged old tests and explain
+legitimate new path/match differences. Human/hardware acceptance is not established by CI.
+
 # Current increment: Phase21C
 
 Read PHASE21C.md first. Current draft PR21 base remains phase20/nature-playgrounds.

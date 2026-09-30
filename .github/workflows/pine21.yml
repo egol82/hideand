@@ -1,4 +1,4 @@
-name: Phase21 Pine Wetland and Canyon interactions
+name: Phase21 complete nature interactions and seeded rounds
 on:
   push:
     branches: ['phase21/living-nature']
@@ -11,7 +11,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -26,8 +26,8 @@ jobs:
           for manifest in ['assets/character13/manifest.json','assets/lighting15/manifest.json']:
               for name,digest in json.loads(pathlib.Path(manifest).read_text()).items():
                   assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
-      - name: Canyon travel/wind, expiry boundary and preserved Wet/Pine/sync plus twenty matches
-        run: python tools/test_canyon21.py --matches
+      - name: Seeded safe rounds and preserved Canyon/Wet/Pine/sync plus twenty matches
+        run: python tools/test_seed21.py --matches
       - name: Affected hiding and map-registry regressions
         shell: python
         run: |
@@ -45,15 +45,16 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk
+          xvfb-run -a python tools/test_seed21.py --skip-import --capture-only
           xvfb-run -a python tools/test_canyon21.py --skip-import --capture-only
           xvfb-run -a python tools/test_wetland21.py --skip-import --capture
           xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/pine21/capture.gd -- --quality-test
-          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase21C_Source.zip HEAD
-          git rev-parse HEAD > ci-artifacts/canyon21-commit.txt
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase21_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/seed21-commit.txt
       - name: Retain evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: canyon21-${{ runner.os }}
+          name: seed21-${{ runner.os }}
           path: ci-artifacts/
           retention-days: 7

@@ -45,7 +45,14 @@ func run() -> void:
 	var original=preload("res://scenes/phase20.tscn").instantiate();root.add_child(original);original.automated=true
 	await process_frame;await process_frame;original.set_process(false)
 	original.select_map("reedwater_bend");await physics_frame
-	check(helpers.geometry(game.arena)==helpers.geometry(original.arena),"wetland adds no collider, spawn, hide entry or obstacle change")
+	# Seed21 is an explicitly authorized ADDITIVE layout. Preserve the full original geometry
+	# and require precisely the two selected numeric boxes/rectangles, not an arbitrary filter.
+	var expected: Array=helpers.geometry(original.arena)
+	var plan: Dictionary=preload("res://scripts/seed21/layouts.gd").plan("reedwater_bend",int(game.rng.seed),game.rules.round_index)
+	for center in plan.positions:
+		expected[2].append(Rect2(center-Vector2(plan.size.x,plan.size.z)*0.5,Vector2(plan.size.x,plan.size.z)).grow(0.46))
+		expected[4].append([Transform3D(Basis.IDENTITY,Vector3(center.x,plan.size.y*0.5,center.y)),"BoxShape3D",plan.size])
+	check(helpers.geometry(game.arena)==expected,"all original wetland geometry plus exactly the two selected Seed21 cover boxes")
 	var original_zones: Array=game.arena.surface_zones.filter(func(z):return not str(z.id).begins_with("wetland21_"))
 	check(original_zones==original.arena.surface_zones,"all existing boardwalk and quiet-bank terrain remains")
 	var free:=0
