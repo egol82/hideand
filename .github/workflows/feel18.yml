@@ -1,0 +1,66 @@
+name: Contact-locked smash polish
+on:
+  push:
+    branches: ['phase18/smash-polish']
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: feel18-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/install_godot15.py
+      - name: Original character and GI assets remain identical
+        shell: python
+        run: |
+          import hashlib,json,pathlib
+          for manifest in ['assets/character13/manifest.json','assets/lighting15/manifest.json']:
+              for name,digest in json.loads(pathlib.Path(manifest).read_text()).items():
+                  assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
+      - name: Contact, sound, comfort, bounded effects and fourteen complete matches
+        run: python tools/test_feel18.py --matches
+      - name: Preserve all inherited engine regressions
+        shell: python
+        run: |
+          import os,pathlib,subprocess,sys
+          for name in ['phase4','quality','graphics','maps','grip','smash','sync','studio','hideplay','premium','character13','material14','lighting15','animation16','environment17']:
+              r=subprocess.run([sys.executable,'tools/test_'+name+'.py'],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=600)
+              text=r.stdout+r.stderr;pathlib.Path('ci-artifacts/feel18-prior-'+name+'.log').write_text(text,encoding='utf-8');print(text,flush=True)
+              if r.returncode:sys.exit(r.returncode)
+          scripts=['tools/test.ps1','tools/test_phase3.ps1'] if os.name=='nt' else ['tools/test.sh','tools/test_phase3.sh']
+          for script in scripts:
+              cmd=['pwsh','-File',script,'-Godot',os.environ['GODOT_BIN']] if os.name=='nt' else ['bash',script]
+              subprocess.run(cmd,check=True,timeout=600)
+          subprocess.run([sys.executable,'tools/verify_project.py'],check=True)
+      - name: Real engine captures and clearly labelled event-timed audio preview
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk ffmpeg
+          xvfb-run -a python tools/test_feel18.py --skip-import --capture --video
+          python tools/mix_feel18_preview.py
+          ffmpeg -y -framerate 30 -i ci-artifacts/feel18_frames/frame_%04d.png -i ci-artifacts/feel18_preview.wav -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest -movflags +faststart ci-artifacts/feel18_demo.mp4
+          rm -rf ci-artifacts/feel18_frames
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase18_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/feel18-source-commit.txt
+      - name: Save exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: feel18-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7

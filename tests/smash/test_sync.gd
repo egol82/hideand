@@ -28,6 +28,7 @@ func run() -> void:
 	if "--lighting15" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase15.tscn")
 	if "--animation16" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase16.tscn")
 	if "--environment17" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase17.tscn")
+	if "--feel18" in OS.get_cmdline_user_args(): selected=load("res://scenes/phase18.tscn")
 	game = selected.instantiate(); root.add_child(game); game.automated = true
 	await process_frame; await process_frame
 	game.set_process(false)

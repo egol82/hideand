@@ -1,3 +1,15 @@
+# Phase18 contact-locked presentation
+
+Read docs/PHASE18.md, PHASE18_TEST_STATUS.md and ASTRA_START.md. Default scenes/phase18.tscn is opt-in; old entries remain.
+- Keep the existing confirmed contact event and AttackSpec as the only impact/action time source. Preserve94 sync assertions unchanged except new scene selector. No damage timers, time_scale, forced camera rotation/FOV or root-motion changes.
+- New bursts and positional sound use the recorded contact point. Trails read visible weapon geometry only, stop on hit, and clear for hidden actors/reset. Never follow a hidden target or add silhouette/occupancy tells.
+- Camera/world weapon authority, original drawings,0.40 view scale, lowered paws, original animation/IK and model/GI manifests must stay unchanged. Cosmetic hand recovery cannot shift first-contact alignment.
+- Cache authored PCM separately from gameplay RNG. Preserve generic footsteps/hearing/metrics; change only the existing swing waveform. Do not play duplicate whooshes or schedule an independent hit sound.
+- Enforce bounded96 inherited particles/6 words,24 puff instances,48 trails,6 impact voices. No per-frame meshes/audio resources or scene allocations. Comparison must restore original scales/materials/sound paths, not just labels.
+- Pause/mute must reach actual AudioStreamPlayer3D playback. Hidden-node visibility alone is not an audio mute. Respect reduced motion and zero feedback without changing damage or AI information rules.
+- Run test_feel18.py --matches, original suites and actual renders. Document that optional soundtrack is an event-timed mono PCM reconstruction, not device/spatial output or latency proof.
+- Preserve old branches/LICENSE/permissions. Feature branch and PR only; no force push, copied paid art, fonts, engines, caches, private saves or raw frame dumps in deliverables.
+
 # Phase17 crafted environment rules
 
 Read PHASE17.md and PHASE17_TEST_STATUS.md first. New entry scenes/phase17.tscn only adds Environment17 to the existing Phase16 game/Phase15 graphics stack.
