@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 18 contact-locked effects and sound; historical entries remain.
+; Hide & Smashing — Phase 19 seven-map finish and bounded decoration batches; historical entries remain.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase18.tscn"
+run/main_scene="res://scenes/phase19.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase18: contact-locked foam impacts, authored sound and restrained hand recovery."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase19: shared toy-world materials, themed finishes and spatially batched decoration."
 
 [display]
 window/size/viewport_width=1280
