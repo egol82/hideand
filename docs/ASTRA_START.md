@@ -1,6 +1,7 @@
-# Phase19 handoff
+# Phase20 handoff
 
-Use phase19/world-finish and scenes/phase19.tscn. Read AGENTS.md and PHASE19.md before changing code.
-World19 adds bounded small-detail batches and six-map direct-light themes over the unchanged Phase18 game. Manor keeps its actual native GI. Cover/clues/hidden players must never be in optional distance-cull batches.
-Use tools/test_world19.py --matches and --capture plus all inherited regressions. Preserve original94 sync predicates, source/asset hashes and old scene entries. Runtime has no requirement for a new Codex Cloud environment or the user's PC original files.
-Phase20 now means multiple outdoor natural maps per latest user request, not the old proposed human-QA-only milestone. Implement it on a separate branch only after19 is published; no merge/deployment/payments/credential requests.
+Start from phase20/nature-playgrounds/scenes/phase20.tscn. Read PHASE20.md and PHASE20_TEST_STATUS.md. Prior Phase19 code6f6c1e1 and its successful CI were recovered; do not recreate earlier milestones.
+
+Plans in scripts/outdoor20/plans.gd own the three new cover/hideout layouts. Builder creates matched cover/collision/nav. Only tiny accents use the retained World19 batch distance setting. Never cull real cover,hidden markers or rewrite collision for quality settings. Actual game controller,weapon/attack/IK and old maps remain.
+
+Run targeted new-map and original contact tests,20 matches and affectedWorld19/Hideplay/Premium/Feel18 regressions. Compare old14 match results against verifiedPhase19,without counting prior successes as new local tests. Actual capture is required for visual claims. Follow no-merge/no-deploy/no-payment. Preserve original model/GI hashes and no font/engine/cache distribution.

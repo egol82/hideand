@@ -59,4 +59,8 @@ func set_distance(value: float) -> void:
 	detail_distance=value;signature=[];refresh()
 func update_label() -> void:
 	if not is_instance_valid(status_label):return
+	if is_instance_valid(game.arena) and game.arena.get_meta("outdoor20",false):
+		var layer=game.arena.get_node_or_null("OutdoorAccents")
+		if layer!=null:status_label.text="야외 장식 %d개 → %d개 공간 묶음\n거리 옵션은 풀·꽃만 제어합니다. 나무·바위·갈대 엄폐는 유지됩니다.\nOutdoor direct light · no additional GI bake"%[layer.get_meta("piece_count"),layer.get_meta("batch_count")]
+		return
 	status_label.text="대저택은 기존 GI와 가구 마감을 유지합니다.\nManor retains its native GI and crafted scenery." if stats.is_empty() else "장식 %d개 → 공간별 묶음 %d개\n거리 옵션은 작은 장식만 제어합니다. 엄폐·은신처는 유지합니다.\nOther maps use authored direct light, not a new GI bake."%[stats.pieces,stats.batches]

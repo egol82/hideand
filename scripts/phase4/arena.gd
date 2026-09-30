@@ -10,6 +10,9 @@ var active_rect := Rect2(-12,-10,24,20)
 var active_spots: Array[int] = []
 
 func _ready() -> void:
+	if map_id in preload("res://scripts/outdoor20/plans.gd").IDS:
+		preload("res://scripts/outdoor20/builder.gd").build(self)
+		return
 	if MapCatalog.is_new(map_id):
 		NewMaps.build(self)
 		return

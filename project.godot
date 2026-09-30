@@ -1,12 +1,12 @@
-; Hide & Smashing — Phase 19 seven-map finish and bounded decoration batches; historical entries remain.
+; Hide & Smashing — Phase 20 three outdoor nature maps and preserved seven-map finish; historical entries remain.
 ; Open using the standard (non-.NET) Godot editor.
 config_version=5
 
 [application]
 config/name="Hide & Smashing"
-run/main_scene="res://scenes/phase19.tscn"
+run/main_scene="res://scenes/phase20.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase19: shared toy-world materials, themed finishes and spatially batched decoration."
+config/description="Draw a toy weapon. Hide from friends. Smash your way out. Offline Phase20: pine forest, reed wetland and amber canyon; ten maps with original drawing combat."
 
 [display]
 window/size/viewport_width=1280
