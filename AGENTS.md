@@ -1,41 +1,24 @@
-# Phase 15 — live manor LightmapGI
+# Hide & Smashing — Phase16 animation and IK
 
-Read docs/PHASE15.md and docs/PHASE15_TEST_STATUS.md first. Default scene scenes/phase15.tscn.
-- This explicitly authorized milestone adds real GI; the older Phase14 no-GI scope below applies to that historical milestone, not this one.
-- Preserve collider/navigation/hideout fingerprints and all seven maps. Replace only matching fixed visual meshes using Build15.signature; never hide or rebuild authoritative collision for a lighting change.
-- LightmapGIData paths are relative to the LightmapGI node. Check all326 resolved users, exact asset hashes, UV2 and fixed geometry signature. Node existence alone is insufficient.
-- Seeded hiding furniture stays OUT of the static bake; it and characters, world/camera weapons receive dynamic probes. Never bake hidden-player occupancy or live traces.
-- Lighting B/C keep identical direct lights, environment, tone mapper and exposure. Only real light_data changes; contact support has its own switch. A restores the old state without accumulated changes.
-- Keep world-only depth/shadows and immutable Phase14 materials. Skinned body/weapon authority and same-contact timing stay unchanged. No fake emissive GI or hidden-target outlines.
-- Grounding patches are an explicit artistic supplement, not SSAO/ray tracing. Use actual foot/floor rays, world layers, hidden visibility, fade and bounded caches; never expose a hiding player.
-- Saved native lightmaps are runtime assets, not cache. Ordinary F5 must not start an editor bake. Preserve source/asset manifest bytes and LF rules on every platform.
-- The earlier editor-finalize error must remain disclosed. Recovered populated data must pass a clean import, live scene integration and actual rendered probe tests before publication. Do not turn continue-on-error into a success claim.
-- Dummy/headless renderer can return empty probe arrays. Check resource schema there, and actual nonempty points/SH plus probe-lit pixels on a rendering backend; do not weaken the render check.
-- Preserve all inherited test runners and94 unchanged sync assertions. New captures hide entire actors (including labels) only for an explicit empty-room fixture. Staged pictures are not human play or hardware benchmarks.
-- New models/animation/whole-map art, physical glass transmission and dynamic indirect rebaking are out of scope. No unrequested merge, paid assets, fonts, engine binaries, saves, secrets or force push.
+Read docs/PHASE16.md, PHASE16_TEST_STATUS.md and ASTRA_START.md. Default scenes/phase16.tscn opts into the new pose adapter. Previous scene entries remain; read PHASE13/14/15 docs before changing their assets.
 
-# Hide & Smashing — Phase14 material/shader rules
+## Authority and preservation
+- Bone animation is cosmetic only. Never reparent/scale/move weapon_pivot, FacingRoot or colliders from animation. No root motion, damage/method tracks or independent hit timers.
+- AttackSpec elapsed and the confirmed contact/reaction age own action timing. HIT is sampled in the consume-event call. KO follows the existing short echo lifecycle, never delaying elimination.
+- Preserve original connected18-bone body/weights/native manifests, Phase14 shader, Phase15 lightmap/UV2/data hashes, fixed0.40 proportional lowered view weapons, original vectors/grips/hit samples and contact alignment.
+- Keep seven-map physics/navigation/hiding fingerprints, actual stairs, public-only clues/atlas and hidden body/face/shadow logic. Pose changes cannot reveal a hidden body or add free ambush damage.
+- Preserve score, damage, clocks, input remaps, bounded SafeStore backups, untimed practice and next-round-only captured workshop. No telemetry, paid assets/APIs, hidden remote persistence or new gameplay RNG use.
 
-Read README.md, docs/PHASE14.md, docs/PHASE14_TEST_STATUS.md and docs/ASTRA_START.md. Default entry scenes/phase14.tscn uses the Phase13 character controller with a material-only ToyStudio override. Read historical scope/invariants in PHASE13.md, PHASE12.md, PHASE11.md and CUTE_SYNC.md before changing those systems.
+## Motion implementation
+- Native clips target Skeleton3D bones only. The library is cached once; AnimationPlayers and poses are independent. One final pose owner follows the old compatibility bridge.
+- Positional IK clamps unreachable hands without limb scaling. Support hand must use an actual connected drawn shaft; release if it cannot reach. Do not add an invented handle or claim universal anatomical grip.
+- Ground rays and stance targets never move physics. Clear plants for air, concealment/transit, teleport/reset. Pause freezes final bones; reduced motion suppresses extra breathing/ears without changing rules or readable attack states.
+- Keep scene nodes/materials/mesh resources bounded when previews and ghosts change. Exported native editor previews are optional; normal F5 generates clips once and needs no bake/export.
+- Do not change lightmap source assets for animation. Lighting B/C still use identical direct lights/environment and differ in actual baked data. Contact supplements remain artistic patches, not SSAO/ray tracing.
 
-## Material authority boundary
-- Preserve the exact connected body/18-bone skeleton/Skin, first-person round paws, fixed0.40 drawing multiplier, lowered view and selected-contact correction. Do not alter meshes, vertex positions, weights, collision samples or cameras from shader code.
-- Material generation I/II comparison must use the same light/model states. Keep historical shaders and A/B/C restoration. Sources are immutable; separate view/world/body/fill material cache entries.
-- No ALPHA/EMISSION, vertex displacement, disabled depth, enemy outlines, screen-reading hacks or global-time motion in the new surface shader. World ATTENUATION and local-light falloff remain; only view-only directional shadows use the existing exception.
-- Refresh newly equipped WORLD weapons by actual revision/instance changes. Do not rebuild materials/meshes/tiles each steady frame. Mipmapped deterministic data tiles have a bounded five-key cache and must not consume gameplay RNG.
-- Microdetail OFF changes fine surface shading only, not information, input, damage, score, clocks or geometry. This option is not a measured hardware performance tier.
-- TrueGI, new topology and full IK/animation are not part of this milestone. Do not describe artistic lit-side wrap as physically accurate SSS.
-
-## Preserve gameplay and prior assets
-- Skeleton and face stay below cosmetic body_art, never above FacingRoot or weapon_pivot. Bodies may deform; authoritative weapons/capsules may not. Preserve source drawings, grips, reach/area/ink limits, AttackSpec, contact identity and original damage/time/score rules.
-- Keep all seven maps, actual two-way stairs, public map data, hidden-body/face/shadow logic, peek range/cone/LOS, capsule-clear exit checks and sound-event snapshots. No live hidden-player radar, fake free ambush damage or decorative clue leaks.
-- Contextual passages remain role/charge/destination checked, not arbitrary teleports or extra invulnerability. Pause freezes rule/service timers. Endgame hints remain broad explicit information.
-- Practice is untimed/unscored and uses actual collision. Captured workshop is next-round only, without equipping early, pausing others or revealing hidden players.
-- Keep native UI callbacks, saved physical remaps/conflict handling and a fixed escape from menus. SafeStore retains valid backups and bounded local data; no secret/remote saves or telemetry upload.
-- Native Phase13 models and Phase10 island remain tracked project assets with generator/manifest provenance. No paid assets/APIs, competitor art, engine/font binaries, caches, raw frame dumps, secrets or user saves in deliverables.
-
-## Validation and delivery
-- Run all inherited core/phase3 and Python phase4,quality,graphics,maps,grip,smash,sync,studio,hideplay,premium,character13 runners. Add test_material14.py --matches and actualGL --capture checks. Require exit status, completion markers, timeouts and clean script/shader-error logs together.
-- Reused94 contact assertions are not new definitions. Pixel fixtures check no-light darkness, opaque occlusion and real shadow response, not every map/GPU/human perception.
-- Real staged engine images are not generated art or human playthroughs. Distinguish headless, softwareGL and actual WindowsGPU evidence. Report known warnings, artistic limitations and untested comfort/fairness/performance honestly.
-- Work in a feature branch and PR. Preserve user edits, LICENSE, repository visibility and earlier branches. No force-push, unrequested merge or permission changes.
+## Verification and delivery
+- Run test_animation16.py --matches plus every existing core/phase3/phase4/quality/graphics/maps/grip/smash/sync/studio/hideplay/premium/character13/material14/lighting15 runner. Preserve94 original contact assertions unchanged except scene selector, and do not count reuse as new definitions.
+- Verify actual floor movement on both stair directions, finite bounded bones, original authority, native clip export/reload, pause/reset and real contact onset. Headless matches may skip invisible pose updates; render/state checks separately exercise them.
+- Distinguish studio-pose inspection, open collision test pad and live-map gameplay captures. No generated imagery or retouched screenshots as implementation proof. Require exit codes, completion markers, bounded timeouts and clean script/shader-error logs.
+- Record rejected iterations, exact commits and source/asset hashes. Staged renders are not human playtests, all-drawing contact guarantees, commercial art approval or hardware FPS/audio benchmarks.
+- Preserve LICENSE, repository permissions and old branches; feature branch/PR only. No force push or unrequested main merge. Never include fonts, engines, .godot caches, raw frame dumps, secrets or player saves.

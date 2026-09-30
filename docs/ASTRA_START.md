@@ -1,13 +1,11 @@
-# Astra — Phase 15 handoff
+# Astra — Phase16 animation handoff
 
-Work from `phase15/manor-lighting-gi`. Read AGENTS.md, PHASE15.md and PHASE15_TEST_STATUS.md. Do not reimplement the game or merge earlier branches implicitly.
+Use phase16/animation-ik and scenes/phase16.tscn. Read AGENTS.md, PHASE16.md and PHASE16_TEST_STATUS.md first.
 
-The default scene is scenes/phase15.tscn. Real native manor lightmaps are tracked under assets/lighting15 and loaded into the actual arena. B/C differ only in the actual LightmapGI resource; profiles A/B/C and material generation I/II remain separate controls.
+The Phase13 mesh/18-bone rig, Phase14 shader and Phase15 baked GI remain unchanged. New native Animation clips affect bones only. One visual owner samples clips in manual mode from gameplay clocks, then applies IK and bounded secondary ears. Never reparent the weapon under a hand bone or feed root motion into the actor.
 
-Preserve the Phase13 connected skinned model, Phase14 shader, Phase12 proportional0.40 weapon display/lowered pose and contact correction, all hiding rules and map authority. Exclude randomized cabinets from fixed bake; preserve Build15.signature and exact manifest hashes. A changed fixed layout/pigment requires explicit rebuild/bake, not a fake success with stale data.
+GripFit reads original shaft segments; support hands release when unreachable. Foot rays are cosmetic and world-planted during stance. Air/hidden/transit/reset must release stale plants. Pause freezes the final pose; reduced motion removes only new flourishes, not information or damage rules.
 
-Run tools/test_lighting15.py --matches and all inherited tests. Use --capture with a display for real GI/probe pixels. Headless probe schema checks are not equivalent to lighting proof. Inspect room/empty-room/feet and isolated actual body/world/view-weapon probe pairs.
+Run test_animation16.py --matches, all inherited runners and actual captures. Export editable native previews with tools/export_animation16.gd. Exported clips preview bone motion without live floor/weapon IK. No motion capture, universal anatomical grasp or perfect foot sliding claim.
 
-The original bake saved data but failed on editor shutdown; recovery validates those exact resources. Do not claim the entire original editor process was error-free. Read the final record before changing the bake tool. User source never bundles fonts, engine binaries, caches or saves.
-
-The next planned stage is animation/IK, not automatic inclusion in Phase15. LightmapGI covers the static manor but not a dynamic rebake of shuffled cabinets or all-seven-map redesign. Keep contact supplements honest and hiding-safe.
+Use existing shared contact event and AttackSpec for new motion work; do not add independent hit timers. Check actual attack/input and zero-age bone/effect onset. Preserve94 original sync assertions, not count reuse as new tests. Preserve original model and lightmap asset/source hashes, LICENSE and branches. No automatic main merge.
