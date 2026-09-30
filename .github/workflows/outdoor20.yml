@@ -1,0 +1,57 @@
+name: Outdoor nature maps
+on:
+  push:
+    branches: ['phase20/nature-playgrounds']
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: outdoor20-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/install_godot15.py
+      - name: Retain model and manor baked asset provenance
+        shell: python
+        run: |
+          import hashlib,json,pathlib
+          for manifest in ['assets/character13/manifest.json','assets/lighting15/manifest.json']:
+              for name,digest in json.loads(pathlib.Path(manifest).read_text()).items():
+                  assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
+      - name: Actual new layouts, floor and hiding handlers, contacts and all twenty matches
+        run: python tools/test_outdoor20.py --matches
+      - name: Targeted affected regressions, not a duplicate whole-history sweep
+        shell: python
+        run: |
+          import subprocess,sys
+          for script in ['world19','hideplay','premium','feel18']:
+              subprocess.run([sys.executable,'tools/test_'+script+'.py'],check=True,timeout=480)
+          subprocess.run([sys.executable,'tools/verify_project.py'],check=True)
+      - name: Render three distinct outdoor maps and measure exact-frame submission counts
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk
+          xvfb-run -a python tools/test_outdoor20.py --skip-import --capture
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase20_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/outdoor20-source-commit.txt
+      - name: Preserve exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdoor20-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
