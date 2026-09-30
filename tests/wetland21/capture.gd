@@ -20,7 +20,10 @@ func difference(a: Image,b: Image) -> float:
 			total+=absf(c.r-d.r)+absf(c.g-d.g)+absf(c.b-d.b);samples+=3
 	return total/maxi(samples,1)
 func fresh() -> void:
-	game.return_to_menu();game.select_map("reedwater_bend");game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.return_to_menu();game.select_map("reedwater_bend")
+	# Flush staged map/preview setup before beginning the captured round.
+	await process_frame;await RenderingServer.frame_post_draw
+	game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-18+i*1.4,0,14))
 	game._process(0);game.get_node("ToyStudio")._process(0)
 	await physics_frame;await physics_frame

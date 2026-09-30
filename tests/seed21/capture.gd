@@ -27,7 +27,11 @@ func run() -> void:
 	for mid in Plans.IDS:
 		var frames: Array[Image]=[]
 		for r in [0,1]:
-			game.return_to_menu();game.select_map(mid);game.rng.seed=8027;game.start_match(false)
+			game.return_to_menu();game.select_map(mid)
+			# Finish the staged map/menu transition before starting the next round.
+			# Otherwise deferred graphics initialization can overlap a destroyed preview.
+			await process_frame;await RenderingServer.frame_post_draw
+			game.rng.seed=8027;game.start_match(false)
 			if r>0:game.rules.round_index=r;game._prepare_round()
 			await ResetReady.wait(game)
 			if not game.round_layout.applied:push_error("Renderer has no actual seeded layout");quit(1);return

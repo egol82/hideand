@@ -10,7 +10,10 @@ func shot(tag: String) -> void:
 func run() -> void:
 	root.size=Vector2i(1280,720);game=Scene.instantiate();root.add_child(game);game.automated=true
 	await process_frame;await process_frame;game.set_process(false)
-	game.return_to_menu();game.select_map("pine_hollow");game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.return_to_menu();game.select_map("pine_hollow")
+	# Flush staged map/preview setup before beginning the captured round.
+	await process_frame;await RenderingServer.frame_post_draw
+	game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	game.preferences.language="ko";game.get_node("ToyStudio")._process(0)
 	var actor=game.fighters[1]
 	game.fighters[0].reset_fight(Vector3(0,0,6));game.rig.face(Vector3.FORWARD)
@@ -24,7 +27,10 @@ func run() -> void:
 	game._process(0);game.camera.global_position=Vector3(0,3.7,5);game.camera.look_at(Vector3(-0.7,0.12,0));game.rig.hand_root.visible=false
 	await shot("leaves")
 	# Public bush shape does not change when occupied; ordinary interaction is used.
-	game.return_to_menu();game.select_map("pine_hollow");game.start_match(false);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.return_to_menu();game.select_map("pine_hollow")
+	# Flush staged map/preview setup before beginning the captured round.
+	await process_frame;await RenderingServer.frame_post_draw
+	game.start_match(false);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	var h=game.hiding;var index:=-1
 	for seed_value in range(10):
 		h.configure(seed_value)

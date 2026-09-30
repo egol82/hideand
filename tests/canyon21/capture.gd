@@ -9,7 +9,9 @@ func _initialize() -> void:call_deferred("run")
 func require(ok: bool,label: String) -> void:
 	if not ok:push_error(label);quit(1)
 func shot(tag: String) -> Image:
-	await process_frame;await RenderingServer.frame_post_draw
+	# Settle deferred lighting/preview work before identical-pose pixel comparisons.
+	for i in range(4):
+		await process_frame;await RenderingServer.frame_post_draw
 	var image:=root.get_texture().get_image()
 	require(image.save_png("res://ci-artifacts/canyon21_"+tag+".png")==OK,"Cannot save "+tag)
 	print("CANYON21_CAPTURE ",tag);return image
@@ -20,7 +22,10 @@ func difference(a: Image,b: Image) -> float:
 			var c:=a.get_pixel(x,y);var d:=b.get_pixel(x,y);value+=absf(c.r-d.r)+absf(c.g-d.g)+absf(c.b-d.b);n+=3
 	return value/maxi(1,n)
 func fresh() -> void:
-	game.return_to_menu();game.select_map("amber_canyon");game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
+	game.return_to_menu();game.select_map("amber_canyon")
+	# Flush staged map/preview setup before beginning the captured round.
+	await process_frame;await RenderingServer.frame_post_draw
+	game.start_match(true);await ResetReady.wait(game);game.accept_drawing();game.rules.tick(game.rules.hiding_seconds+0.01)
 	for i in range(4):game.fighters[i].reset_fight(Vector3(-18+i*1.5,0,15))
 	game._process(0);game.get_node("ToyStudio")._process(0)
 	await physics_frame;await physics_frame

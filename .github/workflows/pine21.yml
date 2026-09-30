@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 3
       - run: python tools/install_godot15.py
       - name: Original character and manor GI manifests
         shell: python
