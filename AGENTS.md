@@ -1,3 +1,14 @@
+# Phase17 crafted environment rules
+
+Read PHASE17.md and PHASE17_TEST_STATUS.md first. New entry scenes/phase17.tscn only adds Environment17 to the existing Phase16 game/Phase15 graphics stack.
+- Keep the old326 static bake users, native assets and original generator hashes. New fixed furniture art is a probe-lit detail shell over old fixed cores, not a rebaked substitute. Never claim unrelated geometry uses the original UV2 lightmap.
+- Dynamic home replacements inherit the same parent/collider/ports and cast real direct shadows. Preserve RoundParcel and Grounding15, exclude clue/visibility/occupancy state from art recipes.
+- Keep new small geometry in authored furniture/wall envelopes, not in walking lanes or peek exits. Test capsule/floor clearance, unchanged nav and actual hiding/exit handlers.
+- Cache and material-batch recipes. Rebuild only on arena/furnishings identity changes, release stale references, preserve independent lighting/material/scenery toggles.
+- Exported native scenes are optional art inspection outputs; normal F5 needs no export. Fixed shell exports need their old cores; manual edits do not silently replace the runtime generator.
+- Preserve all character/GI/weapon/animation invariants below. Add environment tests and real same-light captures; do not replace actual source/engine verification with generated images.
+- No unrequested main merge, external assets, fonts, engines, caches, private saves, secrets or paid services.
+
 # Hide & Smashing — Phase16 animation and IK
 
 Read docs/PHASE16.md, PHASE16_TEST_STATUS.md and ASTRA_START.md. Default scenes/phase16.tscn opts into the new pose adapter. Previous scene entries remain; read PHASE13/14/15 docs before changing their assets.
