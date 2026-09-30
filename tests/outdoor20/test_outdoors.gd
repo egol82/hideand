@@ -3,6 +3,8 @@ const Scene=preload("res://scenes/phase20.tscn")
 const Baseline=preload("res://scenes/phase19.tscn")
 const Plans=preload("res://scripts/outdoor20/plans.gd")
 const Catalog=preload("res://scripts/maps/catalog.gd")
+const PRIOR_IDS := ["toy_manor","toy_home","warehouse","garden","sugar_market","starlight_arcade","pocket_station"]
+const OUTDOOR_IDS := ["pine_hollow","reedwater_bend","amber_canyon"]
 var game
 var checks:=0
 var failures:=0
@@ -35,11 +37,40 @@ func state() -> Array:
 	var s: Array=[game.rules.time_left,game.rules.hp.duplicate(),game.rules.scores.duplicate(),geometry(game.arena)]
 	for a in game.fighters:s.append([a.transform,a.weapon.global_transform,a.weapon_data.to_dictionary(),a.hit_samples.duplicate()])
 	return s
+func map_choice(n: Node) -> OptionButton:
+	if n is OptionButton and n.item_count>0 and n.get_item_text(0)==game.ui.map_name("toy_manor"):return n
+	for child in n.get_children():
+		var found:=map_choice(child)
+		if found!=null:return found
+	return null
 func run() -> void:
 	game=Scene.instantiate();root.add_child(game);game.automated=true
 	await process_frame;await process_frame;await physics_frame;game.set_process(false)
 	var fx=game.get_node("SmashDirector");var studio=game.get_node("ToyStudio");var world=game.get_node("World19")
-	check(Catalog.IDS.size()==9,"nine catalog maps plus dedicated manor equals ten selectable maps")
+	# Pin this release's registry here; the historical Phase 7 test checks its own cohorts.
+	check(Plans.IDS==OUTDOOR_IDS,"three named outdoor map IDs retain their identities")
+	check(Catalog.IDS.size()==9 and not Catalog.IDS.has("toy_manor"),"nine shared-catalog maps keep the dedicated manor separate")
+	var expected: Array=PRIOR_IDS+OUTDOOR_IDS
+	var selectable: Array=["toy_manor"]+Catalog.IDS
+	check(selectable.size()==10,"Phase 20 registers exactly ten selectable maps")
+	for id in expected:
+		check(selectable.count(id)==1,id+" registered exactly once in the ten-map release")
+		if id!="toy_manor":check(Catalog.spec(id).id==id,id+" resolves to itself, not the fallback map")
+	game.ui.show_menu()
+	for id in expected:
+		# The callback rebuilds the menu, so resolve its current control on every iteration.
+		var choice:=map_choice(game.ui.page_panel)
+		check(choice!=null,"live menu exposes the map selector for "+id)
+		if choice==null:continue
+		var titles: Array[String]=[]
+		for i in range(choice.item_count):titles.append(choice.get_item_text(i))
+		var title: String=game.ui.map_name(id)
+		check(titles.size()==10 and titles.count(title)==1,id+" appears exactly once in the live ten-map menu")
+		var index:=titles.find(title)
+		if index<0:continue
+		choice.item_selected.emit(index)
+		check(game.map_id==id and game.arena.map_id==id and game.arena.config.id==id,id+" menu callback selects the correct actual arena")
+		await process_frame;await physics_frame
 	var fingerprints: Array=[]
 	for id in Plans.IDS:
 		game.return_to_menu();game.select_map(id);game.start_match(true);game.accept_drawing()

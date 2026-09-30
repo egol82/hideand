@@ -5,6 +5,9 @@ const Plans = preload("res://scripts/maps/plans.gd")
 const Prefs = preload("res://scripts/phase4/preferences.gd")
 const LegacyCatalog = preload("res://scripts/phase3/map_catalog.gd")
 const Board = preload("res://scripts/maps/board.gd")
+# Phase 7 owns these cohorts, not the size of the extensible shared catalog.
+const ORIGINAL_IDS := ["toy_home", "warehouse", "garden"]
+const PACK_IDS := ["sugar_market", "starlight_arcade", "pocket_station"]
 var game
 var count := 0
 var failures := 0
@@ -15,7 +18,10 @@ func check(ok: bool, label: String) -> void:
 	if ok: print("PASS: "+label)
 	else: failures += 1; printerr("FAIL: "+label)
 func run() -> void:
-	check(Catalog.IDS.size()==6 and Catalog.NEW_IDS.size()==3,"three original and three new map IDs")
+	check(LegacyCatalog.IDS==ORIGINAL_IDS,"three original map IDs retain their identities")
+	check(Catalog.NEW_IDS==PACK_IDS,"three Phase 7 map-pack IDs retain their identities")
+	for id in ORIGINAL_IDS+PACK_IDS:
+		check(Catalog.IDS.count(id)==1 and Catalog.spec(id).id==id and Catalog.is_new(id)==(id in PACK_IDS),id+" remains registered exactly once with its original catalog role")
 	check(Catalog.spec("invalid").id=="toy_home","unknown ID safely falls back")
 	for old in LegacyCatalog.IDS:
 		check(Catalog.spec(old)==LegacyCatalog.spec(old),old+" unchanged old metadata")
