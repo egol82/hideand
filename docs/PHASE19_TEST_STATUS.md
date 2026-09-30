@@ -1,13 +1,38 @@
-# Phase19 — local candidate and publication checks
+# Phase19 — verified world finish, recovered without duplicate implementation
 
-2026-09-30. Actual prior Phase19 source could not be recovered: its available evidence archive contained only two failure-status records. This is a new implementation from remote Phase18 HEAD07fcaff6798c40a34f5a8c9b319feadfcf074148, preserving its newer documentation in the Git tree. The mounted runtime archive reproduced exact Phase18 tree6b5cd191335c556a406e9903654af4a3d2624ae1 before editing.
+Verified runtime/test/capture commit: 6f6c1e10308625d54991d039213e94d80e3bf983.
+PR: https://github.com/egol82/hideand/pull/19
+Dedicated workflow: https://github.com/egol82/hideand/actions/runs/36700799133
+Historical workflow: https://github.com/egol82/hideand/actions/runs/36700858421
 
-Local official Godot4.4.1.stable.official.49a5bc7b6 was restored from the retained tools archive after SHA512 verification. The first import command exceeded its wait window; a clean subsequent import completed. No failed/unfinished process is counted as passing.
+The interrupted delivery was recovered from the successful dedicated Linux artifact. No Phase18-based duplicate implementation was made during this recovery. The exact source archive and its commit marker are preserved. This follow-up changes verification text only.
 
-Observed local results:102 new world/state assertions,94 unchanged contact assertions,default entry and14 matches of4 rounds passed. Rendering produced26 actual images. The first visual iteration was too bright; direct-light energies were reduced and linear tone mapping retained, then all26 final views were regenerated successfully. Original test runners are being completed; final exact-commit remote status will be appended after observation rather than assumed from publication.
+## Observed results and count correction
 
-New decorative pieces versus spatial/material groups: Sugar232/66, Arcade261/108, Station306/56, House150/38, Warehouse352/78, Garden880/48. These counts describe NEW ornaments rather than a claimed whole-game FPS gain. Full/near render counters are separate captured-frame evidence. Real rendering uses Xvfb/Mesa software OpenGL and Dummy audio, not user hardware or human play.
+Both dedicated Windows/Linux jobs on official Godot4.4.1 completed successfully. The actual source and logs contain:
+- WORLD19_UNIT_RESULT: 102 checks, 0 failures — the NEW Phase19 suite.
+- SYNC_UNIT_RESULT: 94 checks, 0 failures — unchanged contact predicates reused against this entry.
+- ANIMATION16_UNIT_RESULT: 144 checks, 0 failures and ANIMATION16_GROUND_RESULT: 18 checks, 0 failures — separate inherited motion/ground regressions, NOT new Phase19 tests.
+- Fourteen matches (seven maps × FIELD/CLASSIC), each four rounds, completed.
+- Other selected inherited hideplay/premium/material/lighting/environment/feel suites and the dedicated rendered comparison completed.
+- Static hygiene:787 conditions; not an engine assertion count.
 
-Coverage: unchanged map geometry/collider/nav/hide points, original character and weapon representation, material/light reset without accumulation, bounded cached batching, small-only distance culling, no dynamic occupancy input and stable frame updates. Existing326-user manor bake and original native character/GI manifests remain unchanged. Other-map lighting is authored direct light, not new baked GI.
+Earlier progress text described246 NEW local checks. No log establishing246 as a distinct new Phase19 suite was recovered. The final checked-in suite actually reports102 on both operating systems, and the current candidate document also says102. 102+144 happens to equal246, but that arithmetic alone does not prove the source of the earlier claim; nor would adding the inherited144 make246 new tests. The definitive final/new count is102. This is not a platform-specific count difference.
 
-Remaining scope: human art/fun/visibility approval, hardware CPU/GPU/VRAM/frame-time benchmarking, all-map GI baking, all-drawing clipping and multiplayer/Steam/EXE. Old valid-path shaderUID fallback and softwareVSync warnings are not suppressed. No engine/fonts/caches/saves are distributed.
+The separate historical workflow succeeded on Linux4.4.1/4.7.2 and Windows4.7.2. It does not mean the new102 World19 checks were run on4.7.2.
+
+## Implementation and scope
+
+The recovered code includes themed finish on the six non-manor maps, material/pigment/8m-cell MultiMesh batching and distance choices for small decorative trim only. Cover, hiding sites and collision remain present at every distance. Shared characters/materials/motion/feel18 are retained, and the original manor GI is not replaced. The six other maps use authored direct-light palettes, NOT newly baked lightmaps.
+
+New ornament instances / spatial-material batches: Sugar232/66, Arcade261/108, Station306/56, House150/38, Warehouse352/78, Garden880/48. These describe added ornament batching, not whole-game FPS.
+
+26 actual same-camera before/after and range comparisons plus renderer-count logs are in the successful artifact. Those controlled software-OpenGL counters establish batching behavior, not a hardware FPS/VRAM guarantee. No human fairness/art/comfort acceptance or all-map GI bake is claimed. These boundaries do not require a duplicate implementation before Phase20.
+
+## Source provenance
+
+Recovered Linux artifact11090237456 has SHA256 f0787474bbf9942d44f6594e5339aa034f20b28800c0043dcdb8e7e661b5ab9c14, matching GitHub metadata. The source ZIP comment identifies6f6c1e1. Windows artifact11090665265 belongs to the same commit; its completed job independently reports102/94 and fourteen matches.
+
+The original102 local tests and26 renders preceded publication; this recovery reads their successful remote evidence rather than unnecessarily rerunning every historical suite before Phase20. Subsequent code changes need their own tests. The original over-bright preview and incomplete import attempt are not substituted for final evidence. Existing shader-UID path fallback/software VSync warnings remain possible.
+
+No merge, production deployment, permission change, payment, engine/font distribution or credential request. Phase20 starts from this verified Phase19 source, not from Phase18.
