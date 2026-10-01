@@ -181,7 +181,7 @@ static func _closed_mass(rings: Array) -> ArrayMesh:
 	return st.commit()
 
 static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
-	var half:=c.size*0.5
+	var half: Vector2=c.size*0.5
 	var water_mesh:=_closed_mass([
 		_square_ring(half+Vector2(0.28,0.24),Vector2(0.08,0.08),0.00,0.3),
 		_square_ring(half+Vector2(0.20,0.18),Vector2(0.06,0.06),0.030,0.5),
@@ -213,8 +213,8 @@ static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
 	var ring:=Node3D.new();root.add_child(ring)
 	for i in range(24):
 		var angle:=TAU*float(i)/24.0
-		var dx:=sign(cos(angle))*half.x*(0.58+0.42*absf(cos(angle)))
-		var dz:=sign(sin(angle))*half.y*(0.56+0.44*absf(sin(angle)))
+		var dx: float=float(sign(cos(angle)))*half.x*(0.58+0.42*absf(cos(angle)))
+		var dz: float=float(sign(sin(angle)))*half.y*(0.56+0.44*absf(sin(angle)))
 		var edge:=Vector3(dx,0,dz)
 		var stem:=CylinderMesh.new();stem.top_radius=0.018;stem.bottom_radius=0.028;stem.height=1.00+0.18*float(i%4);stem.radial_segments=8
 		var stem_node:=MeshInstance3D.new();stem_node.mesh=stem;stem_node.material_override=Art.material(Color("849965"),"wood")
@@ -243,8 +243,8 @@ static func _wetland_willow(root: Node3D,height: float) -> void:
 			strand.rotation=Vector3(0.0,0.22*i,s*0.16)
 
 static func _wetland_rock_cover(root: Node3D,c: Dictionary,tint: Color) -> void:
-	var half:=c.size*0.5
-	var base_phase:=0.43+half.x*0.07+half.y*0.11
+	var half: Vector2=c.size*0.5
+	var base_phase: float=0.43+half.x*0.07+half.y*0.11
 	var main_mesh:=_closed_mass([
 		_square_ring(half+Vector2(0.22,0.22),Vector2(0.12,0.12),0.00,base_phase),
 		_square_ring(half+Vector2(0.18,0.18),Vector2(0.12,0.10),0.34,base_phase+0.3),

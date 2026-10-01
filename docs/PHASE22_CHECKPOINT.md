@@ -67,9 +67,14 @@ Python-only validation was run on the final bytes after writing the files:
 
 ## Important limits of this turn
 
-- Godot parser validation: **NOT run here**
-- Godot scene runtime / actual rendering: **NOT run here**
-- CI / screenshot comparison: **NOT run here**
+- Godot parser validation: **v5 failed in external CI due to GDScript type inference errors; v6 source-level type corrections applied, engine validation pending**
+- Godot scene runtime / actual rendering: **NOT run for v6 in this WEB turn**
+- CI / screenshot comparison: **NOT run for v6 in this WEB turn**
 
 The next approved step is external publication of these exact bytes followed by
 real engine execution and image review.
+
+
+## v6 correction
+
+The v5 engine import log reported five strict GDScript inference failures in `builder.gd` (local values derived from Dictionary/Variant expressions). v6 only adds explicit local types/casts for those values. No mesh formulas, art parameters, gameplay logic, physics, navigation, seed, clue, weapon, camera, or workflow logic was intentionally changed.
