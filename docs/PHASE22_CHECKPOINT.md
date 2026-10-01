@@ -78,3 +78,16 @@ real engine execution and image review.
 ## v6 correction
 
 The v5 engine import log reported five strict GDScript inference failures in `builder.gd` (local values derived from Dictionary/Variant expressions). v6 only adds explicit local types/casts for those values. No mesh formulas, art parameters, gameplay logic, physics, navigation, seed, clue, weapon, camera, or workflow logic was intentionally changed.
+
+## v9 correction
+
+Restarted from the fixed v6 source state. This is a bounded regression-recovery candidate, not the final Phase22 production-art implementation.
+
+- Both triangle normal helpers were reversed to use the intended outward/top/bottom orientation for the existing triangle winding.
+- The water visual regression candidate was simplified from the previous higher overlapping cap arrangement into two lower opaque shore/water slabs so the water clue can remain visible with the existing service-owned track.
+- Current measured visual heights: water maximum approximately 0.044, shore maximum approximately 0.024, lily maximum approximately 0.049.
+- Water, reed and audio clue services, lifecycle timing, physics, tests and existing gameplay logic remain unchanged.
+
+The annulus topology/open organic shoreline goal was not implemented in this correction. The original Phase22 production-art target remains incomplete.
+
+Godot execution, actual water-expiry pixel verification and CI validation have not been run for this document correction. They must be evaluated after publishing the corresponding source candidate.
