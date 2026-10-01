@@ -43,7 +43,7 @@ jobs:
           subprocess.run([sys.executable,'tools/test_maps.py','--skip-matches'],check=True)
           subprocess.run([sys.executable,'tools/test_outdoor20.py','--skip-import'],check=True)
           subprocess.run([sys.executable,'tools/verify_project.py'],check=True)
-      - name: Capture current wetland art and same-camera Phase21 baseline
+      - name: Capture north reed terrain and same-camera approved Phase22 baseline
         if: runner.os == 'Linux'
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
@@ -53,11 +53,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk
           xvfb-run -a python tools/test_wetland21.py --skip-import --capture
-          git worktree add --detach ../phase22-baseline 8737d6e2009f28990e554ffa6c81c5650237afb5
-          mkdir -p ../phase22-baseline/tests/wetland22 ../phase22-baseline/ci-artifacts ci-artifacts/phase22
-          cp tests/wetland22/capture_checkpoint.gd ../phase22-baseline/tests/wetland22/capture_checkpoint.gd
-          timeout 600s "$GODOT_BIN" --path ../phase22-baseline --audio-driver Dummy --headless --editor --import 2>&1 | tee ci-artifacts/phase22-baseline-import.log
-          timeout 420s xvfb-run -a "$GODOT_BIN" --path ../phase22-baseline --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/wetland22/capture_checkpoint.gd -- --quality-test --match-seed=8027 --prefix=before 2>&1 | tee ci-artifacts/phase22-before.log
+          baseline_dir="$RUNNER_TEMP/phase22-baseline"
+          mkdir -p "$baseline_dir"
+          git archive c46581a47079f70d7d53c6698d5906e96f88270f | tar -xf - -C "$baseline_dir"
+          mkdir -p "$baseline_dir/tests/wetland22" "$baseline_dir/ci-artifacts" ci-artifacts/phase22
+          cp tests/wetland22/capture_checkpoint.gd "$baseline_dir/tests/wetland22/capture_checkpoint.gd"
+          timeout 600s "$GODOT_BIN" --path "$baseline_dir" --audio-driver Dummy --headless --editor --import 2>&1 | tee ci-artifacts/phase22-baseline-import.log
+          timeout 420s xvfb-run -a "$GODOT_BIN" --path "$baseline_dir" --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/wetland22/capture_checkpoint.gd -- --quality-test --match-seed=8027 --prefix=before 2>&1 | tee ci-artifacts/phase22-before.log
           timeout 420s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/wetland22/capture_checkpoint.gd -- --quality-test --match-seed=8027 --prefix=after 2>&1 | tee ci-artifacts/phase22-after.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|(^|[[:space:]])ERROR:|FAIL:' ci-artifacts/phase22-baseline-import.log ci-artifacts/phase22-before.log ci-artifacts/phase22-after.log; then
             echo 'FAIL: Engine error in Phase22 comparison capture.' >&2
@@ -65,8 +67,8 @@ jobs:
           fi
           grep -Fq 'PHASE22_CAPTURE_PASS: before' ci-artifacts/phase22-before.log
           grep -Fq 'PHASE22_CAPTURE_PASS: after' ci-artifacts/phase22-after.log
-          cp ../phase22-baseline/ci-artifacts/before_*.png ci-artifacts/phase22/
-          cp ../phase22-baseline/ci-artifacts/before_manifest.json ci-artifacts/phase22/
+          cp "$baseline_dir"/ci-artifacts/before_*.png ci-artifacts/phase22/
+          cp "$baseline_dir/ci-artifacts/before_manifest.json" ci-artifacts/phase22/
           cp ci-artifacts/after_*.png ci-artifacts/after_manifest.json ci-artifacts/phase22/
           cp ci-artifacts/wetland21_*.png ci-artifacts/phase22/
           python - <<'PY'
@@ -111,11 +113,11 @@ jobs:
           Path('ci-artifacts/phase22-conditions.log').write_text(result, encoding='utf-8')
           print(result, end='')
           PY
-          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase22_WetlandCheckpoint_v2_Source.zip HEAD
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase22_NorthReed_Source.zip HEAD
           git rev-parse HEAD > ci-artifacts/phase22-head.txt
           git rev-parse HEAD^{tree} > ci-artifacts/phase22-tree.txt
-          git diff --binary --full-index 8737d6e2009f28990e554ffa6c81c5650237afb5 HEAD > ci-artifacts/HideAndSmashing_Phase22_WetlandCheckpoint_v2.patch
-          git bundle create ci-artifacts/HideAndSmashing_Phase22_WetlandCheckpoint_v2.bundle HEAD ^8737d6e2009f28990e554ffa6c81c5650237afb5
+          git diff --binary --full-index c46581a47079f70d7d53c6698d5906e96f88270f HEAD > ci-artifacts/HideAndSmashing_Phase22_NorthReed.patch
+          git bundle create ci-artifacts/HideAndSmashing_Phase22_NorthReed.bundle HEAD ^c46581a47079f70d7d53c6698d5906e96f88270f
       - name: Retain evidence
         if: always()
         uses: actions/upload-artifact@v4

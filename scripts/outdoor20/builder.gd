@@ -5,6 +5,7 @@ const Art=preload("res://scripts/phase4/art.gd")
 const Toy=preload("res://scripts/toy_factory.gd")
 const Batch=preload("res://scripts/world19/batches.gd")
 const RING_STEPS:=16
+const NorthReed=preload("res://scripts/outdoor20/north_reed_profile.gd")
 
 static func build(a) -> void:
 	a.config=P.spec(a.map_id);a.dimensions=a.config.size;a.active_rect=Rect2(-a.dimensions*0.5,a.dimensions)
@@ -78,8 +79,11 @@ static func _cover(a,c: Dictionary) -> void:
 		var body:=StaticBody3D.new();body.name="CoverPhysics";body.collision_layer=1;root.add_child(body)
 		var collider:=CollisionShape3D.new();var shape:=CylinderShape3D.new();shape.radius=c.size.x*0.5;shape.height=c.height;collider.shape=shape;collider.position.y=c.height*0.5;body.add_child(collider)
 	elif c.kind=="reeds" and a.map_id=="reedwater_bend":
-		_wetland_reed_cover(root,c)
-		Toy.collider(root,Vector3.UP*c.height*0.5,size3).name="CoverPhysics"
+		if c.id=="reed_north":
+			_north_reed_cover(root,c)
+		else:
+			_wetland_reed_cover(root,c)
+			Toy.collider(root,Vector3.UP*c.height*0.5,size3).name="CoverPhysics"
 	elif c.kind=="rock" and a.map_id=="reedwater_bend":
 		_wetland_rock_cover(root,c,tint)
 		Toy.collider(root,Vector3.UP*c.height*0.5,size3).name="CoverPhysics"
@@ -180,7 +184,7 @@ static func _closed_mass(rings: Array) -> ArrayMesh:
 		_push_tri(st,top_center,top[i],top[j])
 	return st.commit()
 
-static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
+static func _reed_water_skirt(root: Node3D,c: Dictionary) -> void:
 	var half: Vector2=c.size*0.5
 	var water_mesh:=_closed_mass([
 		_square_ring(half+Vector2(0.28,0.24),Vector2(0.08,0.08),0.00,0.3),
@@ -189,6 +193,58 @@ static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
 	])
 	var water:=_mesh_node(root,water_mesh,Color("74aaae"),"ceramic",1.0)
 	water.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+static func _plant_anchor(parent: Node3D,name_value: String,at: Vector2) -> Node3D:
+	var height:=NorthReed.surface_height(at)
+	assert(is_finite(height),"North reed decoration must be on the landform")
+	var anchor:=Node3D.new();anchor.name=name_value;anchor.position=Vector3(at.x,height,at.y)
+	anchor.set_meta("north_surface_anchor",true);parent.add_child(anchor)
+	return anchor
+
+static func _north_reed_cover(root: Node3D,c: Dictionary) -> void:
+	# The user's collision exception applies only to reed_north. The old box is never created.
+	_reed_water_skirt(root,c)
+	var terrain:=MeshInstance3D.new();terrain.name="NorthReedTerrain";terrain.mesh=NorthReed.mesh()
+	terrain.set_surface_override_material(0,_material_variant(Color("88755e"),"plaster",1.35,0.14))
+	terrain.set_surface_override_material(1,_material_variant(Color("8fa66b"),"foam",3.8,0.12))
+	root.add_child(terrain)
+	var body:=StaticBody3D.new();body.name="CoverPhysics";body.collision_layer=1;body.collision_mask=0;root.add_child(body)
+	var collision:=CollisionShape3D.new();var shape:=ConvexPolygonShape3D.new();shape.points=NorthReed.points()
+	collision.shape=shape;body.add_child(collision)
+	var decor:=Node3D.new();decor.name="NorthReedDecor";root.add_child(decor)
+	for i in range(5):
+		var at:=Vector2(-1.35+float(i)*0.65,-0.35+0.28*sin(float(i)*1.8))
+		var anchor:=_plant_anchor(decor,"Moss_%02d"%i,at)
+		var cap:=Art.ball(anchor,Vector3(0,0.035,0),Vector3(0.40,0.20,0.28),Color("97b56f"),"foam")
+		cap.rotation.y=0.4*float(i)
+	for side in [-1,1]:
+		for i in range(3):
+			var at:=Vector2(float(side)*(2.95-0.12*i),-0.66+0.40*i)
+			var anchor:=_plant_anchor(decor,"Root_%s_%d"%[str(side),i],at)
+			var rootlog:=Art.box(anchor,Vector3(0,0.015,0),Vector3(0.42,0.12,0.16),Color("8f6a45"),"wood",0.04)
+			rootlog.rotation.y=side*(0.42-0.11*i)
+			# Follow the bank slope along the root, keeping its ends embedded in soil.
+			var axis:=Vector2(cos(rootlog.rotation.y),-sin(rootlog.rotation.y))*0.16
+			rootlog.rotation.z=atan2(NorthReed.surface_height(at+axis)-NorthReed.surface_height(at-axis),0.32)
+	for i in range(24):
+		var angle:=TAU*float(i)/24.0
+		var at:=Vector2(2.55*cos(angle),2.13*sin(angle))
+		var anchor:=_plant_anchor(decor,"Reed_%02d"%i,at)
+		# One local stalk frame keeps the head and leaf attached as the stem tilts.
+		var stalk:=Node3D.new();anchor.add_child(stalk)
+		stalk.rotation=Vector3(0.05*sin(angle*2.0),angle,0.06*cos(angle*1.7))
+		var stem:=CylinderMesh.new();stem.top_radius=0.018;stem.bottom_radius=0.028;stem.height=1.00+0.18*float(i%4);stem.radial_segments=8
+		var stem_node:=MeshInstance3D.new();stem_node.name="Stem";stem_node.mesh=stem;stem_node.material_override=Art.material(Color("849965"),"wood")
+		stem_node.position.y=stem.height*0.5-0.035;stalk.add_child(stem_node)
+		if i%2==0:
+			var leaf:=Art.box(stalk,Vector3(0,stem.height*0.52,0.18),Vector3(0.03,0.01,0.58),Color("a9bc79"),"foam",0.014)
+			leaf.name="Leaf";leaf.rotation=Vector3(-0.20,0.16,0.52)
+		var head:=Art.ball(stalk,Vector3(0,stem.height-0.015,0),Vector3(0.08,0.18,0.08),Color("b18f61"),"foam")
+		head.name="Head"
+
+static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
+	_reed_water_skirt(root,c)
+	var half: Vector2=c.size*0.5
 	var mud_mesh:=_closed_mass([
 		_square_ring(half+Vector2(0.24,0.22),Vector2(0.10,0.09),0.00,0.9),
 		_square_ring(half+Vector2(0.18,0.16),Vector2(0.08,0.08),0.26,1.0),

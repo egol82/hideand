@@ -6,6 +6,7 @@ const Pine=preload("res://scripts/pine21/services.gd")
 const PineTests=preload("res://tests/pine21/test_pine.gd")
 const OutdoorTests=preload("res://tests/outdoor20/test_outdoors.gd")
 const Catalog=preload("res://scripts/maps/catalog.gd")
+const North=preload("res://tests/wetland22/north_contract.gd")
 var game
 var checks:=0
 var failures:=0
@@ -47,14 +48,28 @@ func run() -> void:
 	var original=preload("res://scenes/phase20.tscn").instantiate();root.add_child(original);original.automated=true
 	await process_frame;await process_frame;original.set_process(false)
 	original.select_map("reedwater_bend");await physics_frame
-	# Seed21 is an explicitly authorized ADDITIVE layout. Preserve the full original geometry
-	# and require precisely the two selected numeric boxes/rectangles, not an arbitrary filter.
+	# Phase22 explicitly replaces ONLY the north reed collider. Pin its exact profile
+	# independently, retaining every other original collider/rectangle/spawn/hide entry.
 	var expected: Array=helpers.geometry(original.arena)
+	var north: Node3D=game.arena.get_node("Cover_reed_north")
+	var north_shapes: Array=north.find_children("*","CollisionShape3D",true,false)
+	check(north.position==Vector3(0,0,-7) and north_shapes.size()==1,"approved north island centre and exactly one replacement collider; no retained Box wall")
+	if north_shapes.size()==1:
+		var shape: CollisionShape3D=north_shapes[0]
+		check([shape.global_transform,shape.shape.get_class(),helpers.shape_geometry(shape.shape)]==North.collision(helpers),"only north collider is the independently pinned 64-vertex Convex terrain profile")
+	var reference_shapes: Array=original.arena.get_node("Cover_reed_north").find_children("*","CollisionShape3D",true,false)
+	check(reference_shapes.size()==1,"Phase20 reference retains one uniquely identified north collider")
+	if reference_shapes.size()==1:
+		var index: int=original.arena.find_children("*","CollisionShape3D",true,false).find(reference_shapes[0])
+		expected[4][index]=North.collision(helpers)
+	check(game.arena.obstacles.count(Rect2(-3.5,-10,7,6).grow(0.46))==1,"approved north profile preserves its original conservative navigation rectangle")
+	# Seed21 is an explicitly authorized ADDITIVE layout. Require precisely the two
+	# selected numeric boxes/rectangles, never arbitrary collider filtering.
 	var plan: Dictionary=preload("res://scripts/seed21/layouts.gd").plan("reedwater_bend",int(game.rng.seed),game.rules.round_index)
 	for center in plan.positions:
 		expected[2].append(Rect2(center-Vector2(plan.size.x,plan.size.z)*0.5,Vector2(plan.size.x,plan.size.z)).grow(0.46))
 		expected[4].append([Transform3D(Basis.IDENTITY,Vector3(center.x,plan.size.y*0.5,center.y)),"BoxShape3D",plan.size])
-	check(helpers.geometry(game.arena)==expected,"all original wetland geometry plus exactly the two selected Seed21 cover boxes")
+	check(helpers.geometry(game.arena)==expected,"all original wetland geometry except the pinned north profile plus exactly two selected Seed21 cover boxes")
 	var original_zones: Array=game.arena.surface_zones.filter(func(z):return not str(z.id).begins_with("wetland21_"))
 	check(original_zones==original.arena.surface_zones,"all existing boardwalk and quiet-bank terrain remains")
 	var free:=0

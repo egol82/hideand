@@ -1,3 +1,14 @@
+# Phase22 — north reed terrain exception
+
+Read docs/PHASE22_NORTH_REED.md. The user's explicit exception permits changing
+only Reedwater Bend's reed_north terrain and collider at (0,-7), within7×6m.
+Use the matching Convex hull; never retain the old north Box alongside it.
+Keep all reeds/leaves/heads/moss/roots planted on the actual terrain surface.
+All other original geometry, water, clues, cameras, seeds and services remain
+protected. Preserve all prior behavior tests; numeric comparisons may replace
+only the independently pinned north collider. Same branch and draft PR22;
+no merge/deploy. Compare actual c46581a/current same-seed8027 rendered views.
+
 # Phase21D — approved final seed/integration increment
 
 Read docs/PHASE21D.md. This latest explicit user scope supersedes historical no-seed notes below.
