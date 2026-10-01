@@ -1,3 +1,25 @@
+# Phase22 — approved reed-clue surface placement exception
+
+The user explicitly approved fixing the pre-existing reduced-motion reed clue
+occlusion. Only the existing three reed-clue meshes may be fitted to the actual
+reactive mound surface and follow its existing sway. Keep recorded event/world
+coordinates, timers, sounds, investigation, pooled parents, water visuals,
+terrain meshes/colliders, seeds and all other dressing unchanged. Bare-ground
+placements and every reused/reset slot must restore their authored transforms.
+Preserve all existing tests; add actual surface/rim/slot and normal-eye pixel
+regressions. Same draft PR22; no merge/deploy.
+
+# Phase22 — north reed terrain exception
+
+Read docs/PHASE22_NORTH_REED.md. The user's explicit exception permits changing
+only Reedwater Bend's reed_north terrain and collider at (0,-7), within7×6m.
+Use the matching Convex hull; never retain the old north Box alongside it.
+Keep all reeds/leaves/heads/moss/roots planted on the actual terrain surface.
+All other original geometry, water, clues, cameras, seeds and services remain
+protected. Preserve all prior behavior tests; numeric comparisons may replace
+only the independently pinned north collider. Same branch and draft PR22;
+no merge/deploy. Compare actual c46581a/current same-seed8027 rendered views.
+
 # Phase21D — approved final seed/integration increment
 
 Read docs/PHASE21D.md. This latest explicit user scope supersedes historical no-seed notes below.

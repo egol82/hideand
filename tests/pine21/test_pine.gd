@@ -18,14 +18,29 @@ func node_count(n: Node) -> int:
 	var total:=1
 	for child in n.get_children():total+=node_count(child)
 	return total
+func normalized_vertices(points: PackedVector3Array) -> Array:
+	# Convex resource IDs and point order are not geometry. Pin numeric coordinates
+	# at 10 micrometres so independently built resources compare deterministically.
+	var vertices: Array=[]
+	for p in points:vertices.append([roundi(p.x*100000.0),roundi(p.y*100000.0),roundi(p.z*100000.0)])
+	vertices.sort_custom(func(left: Array,right: Array) -> bool:
+		for axis in range(3):
+			if left[axis]!=right[axis]:return left[axis]<right[axis]
+		return false)
+	return vertices
+func shape_geometry(sh: Shape3D):
+	if sh is BoxShape3D:return sh.size
+	if sh is ConvexPolygonShape3D:return normalized_vertices(sh.points)
+	if sh is CylinderShape3D or sh is CapsuleShape3D:return [sh.radius,sh.height]
+	if sh is SphereShape3D:return sh.radius
+	push_error("No numeric geometry serializer for "+sh.get_class())
+	return null
 func geometry(a) -> Array:
-	var shapes: Array=[]
-	for n in a.find_children("*","CollisionShape3D",true,false):shapes.append([n.global_transform,n.shape.get_class(),str(n.shape)])
-	# Resource instance IDs differ; compare numeric shapes separately.
+	# Compare all authoritative transforms and numeric shape data, never resource IDs.
 	var collision: Array=[]
 	for n in a.find_children("*","CollisionShape3D",true,false):
 		var sh=n.shape
-		collision.append([n.global_transform,sh.get_class(),sh.size if sh is BoxShape3D else [sh.radius,sh.height]])
+		collision.append([n.global_transform,sh.get_class(),shape_geometry(sh)])
 	return [a.spots.duplicate(),a.active_spots.duplicate(),a.obstacles.duplicate(),a.spawn_points.duplicate(),collision]
 func fresh(mode: String="field",hider: bool=true) -> void:
 	game.return_to_menu();game.select_map("pine_hollow");game.set_mode(mode);game.start_match(not hider);await ResetReady.wait(game);game.accept_drawing()
