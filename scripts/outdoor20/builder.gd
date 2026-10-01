@@ -125,7 +125,7 @@ static func _mesh_node(parent: Node3D,mesh: Mesh,color: Color,kind: String,scale
 	return node
 
 static func _push_tri(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,uv_scale: float=0.11) -> void:
-	var normal: Vector3=(b-a).cross(c-a)
+	var normal: Vector3=(c-a).cross(b-a)
 	if normal.length_squared()<0.000001:return
 	normal=normal.normalized()
 	st.set_normal(normal);st.set_uv(Vector2(a.x,a.z)*uv_scale);st.add_vertex(a)

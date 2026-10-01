@@ -53,7 +53,7 @@ static func _mesh_node(parent: Node3D,mesh: Mesh,color: Color,kind: String,scale
 	return node
 
 static func _push_tri(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,uv_scale: float=0.12) -> void:
-	var normal: Vector3=(b-a).cross(c-a)
+	var normal: Vector3=(c-a).cross(b-a)
 	if normal.length_squared()<0.000001:return
 	normal=normal.normalized()
 	st.set_normal(normal);st.set_uv(Vector2(a.x,a.z)*uv_scale);st.add_vertex(a)
@@ -127,36 +127,20 @@ static func _reed_cluster(parent: Node3D,rng: RandomNumberGenerator,extent: Vect
 
 static func _water_patch(parent: Node3D,r: Rect2,index: int) -> void:
 	var root:=Node3D.new();root.name="WaterArea%02d"%index;root.position=Vector3(r.get_center().x,0,r.get_center().y);parent.add_child(root)
-	var half:=r.size*0.5
-	var shore:=_closed_mass([
-		_square_ring(half+Vector2(0.28,0.20),Vector2(0.10,0.08),0.00,0.45+index*0.37),
-		_square_ring(half+Vector2(0.18,0.14),Vector2(0.08,0.06),0.028,0.65+index*0.37),
-		_square_ring(half+Vector2(0.10,0.08),Vector2(0.06,0.05),0.060,0.95+index*0.37,0.010)
-	])
-	_mesh_node(root,shore,Color("76855f"),"plaster",1.45,0.12)
-	var damp:=_closed_mass([
-		_square_ring(half+Vector2(0.18,0.12),Vector2(0.10,0.08),0.016,1.15+index*0.27),
-		_square_ring(half+Vector2(0.10,0.08),Vector2(0.08,0.06),0.042,1.35+index*0.27,0.006)
-	])
-	var damp_node:=_mesh_node(root,damp,Color("88956d"),"plaster",1.65,0.10)
-	damp_node.position.y=0.001
-	var water:=_closed_mass([
-		_square_ring(Vector2(maxf(half.x-0.18,0.22),maxf(half.y-0.10,0.18)),Vector2(0.10,0.08),0.028,1.8+index*0.31),
-		_square_ring(Vector2(maxf(half.x-0.26,0.18),maxf(half.y-0.14,0.15)),Vector2(0.08,0.06),0.046,2.05+index*0.31,0.006)
-	])
-	var water_node:=_mesh_node(root,water,Color("6ba6ab"),"ceramic",1.0)
-	no_shadow(water_node)
+	var size:=r.size
+	# Low visual perimeter and open centre: the service-owned track remains visible.
+	var shore:=Art.box(root,Vector3(0,0.018,0),Vector3(size.x+0.20,0.012,size.y+0.16),Color("758461"),"plaster",0.08)
+	no_shadow(shore)
+	var water:=Art.box(root,Vector3(0,0.040,0),Vector3(size.x-0.30,0.008,size.y-0.18),Color("6ba6ab"),"ceramic",1.0)
+	no_shadow(water)
 	var rng:=RandomNumberGenerator.new();rng.seed=4400+index
 	for i in range(6):
-		var pos:=Vector3(rng.randf_range(-half.x*0.38,half.x*0.38),0.053,rng.randf_range(-half.y*0.22,half.y*0.22))
-		var lily:=Art.ball(root,pos,Vector3(0.13,0.012,0.15),Color("9ebf7d"),"foam")
-		lily.rotation.y=rng.randf()*TAU;no_shadow(lily)
+		var pos:=Vector3(rng.randf_range(-size.x*0.32,size.x*0.32),0.043,rng.randf_range(-size.y*0.20,size.y*0.20))
+		var lily:=Art.ball(root,pos,Vector3(0.13,0.006,0.15),Color("9ebf7d"),"foam")
+		no_shadow(lily)
 	for side in [-1,1]:
-		var clump:=Node3D.new();clump.position=Vector3(side*(half.x+0.22),0.02,(-0.18 if side<0 else 0.14)*half.y);root.add_child(clump)
-		_reed_cluster(clump,rng,Vector2(0.20,0.16),4,0.58,0.0)
-		for j in range(2):
-			var grass:=Art.ball(clump,Vector3(0.10*(-1 if j==0 else 1),0.10,0.16*j-0.08),Vector3(0.16,0.08,0.12),Color("95b56d"),"foam")
-			grass.rotation.y=rng.randf()*TAU
+		var clump:=Node3D.new();clump.position=Vector3(side*(size.x*0.5+0.12),0.02,0);root.add_child(clump)
+		_reed_cluster(clump,rng,Vector2(0.16,0.14),4,0.55,0.0)
 
 static func _reactive_tuft(parent: Node3D,index: int) -> void:
 	var rng:=RandomNumberGenerator.new();rng.seed=7800+index
