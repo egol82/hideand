@@ -7,9 +7,12 @@ func apply_lighting() -> void:
 	if not active or not world_lighting or profile==0 or game.arena.map_id not in Nature.IDS:return
 	var id: String=game.arena.map_id
 	var key: DirectionalLight3D=game.get_node("WarmKey");var fill: DirectionalLight3D=game.get_node("CoolSoftFill")
-	key.light_color=Color("ffe2ad") if id!="reedwater_bend" else Color("f5edce")
-	key.light_energy=0.43 if id!="amber_canyon" else 0.47;key.rotation_degrees=Vector3(-46,-32,0) if id!="amber_canyon" else Vector3(-35,-55,0)
-	fill.light_color=Color("cce1d7");fill.light_energy=0.16
+	key.light_color=Color("ffe2ad") if id!="reedwater_bend" else Color("f8e9bf")
+	key.light_energy=0.43 if id!="amber_canyon" else 0.47
+	if id=="reedwater_bend":key.light_energy=0.46
+	key.rotation_degrees=Vector3(-46,-32,0) if id!="amber_canyon" else Vector3(-35,-55,0)
+	fill.light_color=Color("cce1d7") if id!="reedwater_bend" else Color("bed9e4")
+	fill.light_energy=0.16 if id!="reedwater_bend" else 0.19
 	var env: Environment=game.environment_node.environment
 	env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.ambient_light_color=game.arena.config.sky;env.ambient_light_energy=0.32
 	env.tonemap_mode=Environment.TONE_MAPPER_LINEAR;env.tonemap_exposure=1.0

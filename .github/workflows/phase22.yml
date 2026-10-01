@@ -1,0 +1,151 @@
+name: Phase22 wetland art checkpoint
+on:
+  push:
+    branches: ['phase22/wetland-art-slice']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phase22-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python tools/install_godot15.py
+      - name: Original character and manor GI manifests
+        shell: python
+        run: |
+          import hashlib,json,pathlib
+          for manifest in ['assets/character13/manifest.json','assets/lighting15/manifest.json']:
+              for name,digest in json.loads(pathlib.Path(manifest).read_text()).items():
+                  assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==digest,name
+      - name: Preserve seeded rounds, matches and wetland clue behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/test_seed21.py --matches
+          python tools/test_seed21_rounds.py --skip-import
+          python tools/test_wetland21.py --skip-import
+      - name: Affected regressions only
+        shell: python
+        run: |
+          import subprocess,sys
+          subprocess.run([sys.executable,'tools/test_hideplay.py'],check=True)
+          subprocess.run([sys.executable,'tools/test_maps.py','--skip-matches'],check=True)
+          subprocess.run([sys.executable,'tools/test_outdoor20.py','--skip-import'],check=True)
+          subprocess.run([sys.executable,'tools/verify_project.py'],check=True)
+      - name: Capture current wetland art and same-camera Phase21 baseline
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb fonts-noto-cjk
+          xvfb-run -a python tools/test_wetland21.py --skip-import --capture
+          git worktree add --detach ../phase22-baseline 8737d6e2009f28990e554ffa6c81c5650237afb5
+          mkdir -p ../phase22-baseline/tests/wetland22 ../phase22-baseline/ci-artifacts ci-artifacts/phase22
+          cp tests/wetland22/capture_checkpoint.gd ../phase22-baseline/tests/wetland22/capture_checkpoint.gd
+          timeout 600s "$GODOT_BIN" --path ../phase22-baseline --audio-driver Dummy --headless --editor --import 2>&1 | tee ci-artifacts/phase22-baseline-import.log
+          timeout 420s xvfb-run -a "$GODOT_BIN" --path ../phase22-baseline --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/wetland22/capture_checkpoint.gd -- --quality-test --match-seed=8027 --prefix=before 2>&1 | tee ci-artifacts/phase22-before.log
+          timeout 420s xvfb-run -a "$GODOT_BIN" --path . --audio-driver Dummy --rendering-method gl_compatibility --fixed-fps 30 --script res://tests/wetland22/capture_checkpoint.gd -- --quality-test --match-seed=8027 --prefix=after 2>&1 | tee ci-artifacts/phase22-after.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Shader compilation failed|(^|[[:space:]])ERROR:|FAIL:' ci-artifacts/phase22-baseline-import.log ci-artifacts/phase22-before.log ci-artifacts/phase22-after.log; then
+            echo 'FAIL: Engine error in Phase22 comparison capture.' >&2
+            exit 1
+          fi
+          grep -Fq 'PHASE22_CAPTURE_PASS: before' ci-artifacts/phase22-before.log
+          grep -Fq 'PHASE22_CAPTURE_PASS: after' ci-artifacts/phase22-after.log
+          cp ../phase22-baseline/ci-artifacts/before_*.png ci-artifacts/phase22/
+          cp ../phase22-baseline/ci-artifacts/before_manifest.json ci-artifacts/phase22/
+          cp ci-artifacts/after_*.png ci-artifacts/after_manifest.json ci-artifacts/phase22/
+          cp ci-artifacts/wetland21_*.png ci-artifacts/phase22/
+          python - <<'PY'
+          import json, math
+          from pathlib import Path
+          folder = Path('ci-artifacts/phase22')
+          before = json.loads((folder/'before_manifest.json').read_text(encoding='utf-8'))
+          after = json.loads((folder/'after_manifest.json').read_text(encoding='utf-8'))
+          def same(a, b, path):
+              if isinstance(a, dict):
+                  assert isinstance(b, dict) and a.keys() == b.keys(), path
+                  for key in a:
+                      same(a[key], b[key], path+'/'+key)
+              elif isinstance(a, list):
+                  assert isinstance(b, list) and len(a) == len(b), path
+                  for index, (left, right) in enumerate(zip(a, b)):
+                      same(left, right, path+'/'+str(index))
+              elif isinstance(a, (int, float)) and not isinstance(a, bool):
+                  assert isinstance(b, (int, float)) and math.isfinite(a) and math.isfinite(b), path
+                  if isinstance(a, int) and isinstance(b, int):
+                      assert a == b, (path, a, b)
+                  else:
+                      assert math.isclose(a, b, rel_tol=0.0, abs_tol=0.00001), (path, a, b)
+              else:
+                  assert a == b, (path, a, b)
+          assert before['schema'] == after['schema'] == 1
+          assert before['prefix'] == 'before' and after['prefix'] == 'after'
+          assert set(before['views']) == set(after['views']) == {'close', 'mid', 'gameplay'}
+          for manifest in (before, after):
+              for tag, view in manifest['views'].items():
+                  assert (view['map'], view['mode'], view['match_seed'], view['round_index']) == ('reedwater_bend', 'field', 8027, 0)
+                  layout = view['layout']
+                  assert (layout['seed'], layout['round'], layout['round_seed']) == (8027, 0, 8027)
+                  assert len(layout['positions']) == 2 and layout['fingerprint']
+                  assert view['viewport'] == [1280, 720]
+                  image = folder/(manifest['prefix']+'_'+tag+'.png')
+                  assert image.stat().st_size > 1000, str(image)
+              same(manifest['views']['gameplay']['camera_global_transform'][3], [5.9, 1.48, -2.5], 'gameplay/eye')
+              same(manifest['views']['gameplay']['camera_local_transform'][3], [0.0, 0.0, 0.0], 'gameplay/local-origin')
+          same(before['views'], after['views'], 'views')
+          result = 'PHASE22_CONDITIONS_PASS: three paired views; identical actual seed/round/layout, camera transforms and actor transforms; gameplay eye verified. Art pixels are not required to match.\n'
+          Path('ci-artifacts/phase22-conditions.log').write_text(result, encoding='utf-8')
+          print(result, end='')
+          PY
+          git archive --format=zip --output=ci-artifacts/HideAndSmashing_Phase22_WetlandCheckpoint_v2_Source.zip HEAD
+          git rev-parse HEAD > ci-artifacts/phase22-head.txt
+          git rev-parse HEAD^{tree} > ci-artifacts/phase22-tree.txt
+          git diff --binary --full-index 8737d6e2009f28990e554ffa6c81c5650237afb5 HEAD > ci-artifacts/HideAndSmashing_Phase22_WetlandCheckpoint_v2.patch
+          git bundle create ci-artifacts/HideAndSmashing_Phase22_WetlandCheckpoint_v2.bundle HEAD ^8737d6e2009f28990e554ffa6c81c5650237afb5
+      - name: Retain evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase22-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
+  verify_472:
+    name: Wetland art 4.7.2 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      GODOT_TEST_VERSION: '4.7.2'
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/install_godot15.py
+      - name: 4.7.2 compatibility check for round reset and wetland clues
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/test_seed21_rounds.py
+          python tools/test_wetland21.py --skip-import
+      - name: Preserve 4.7.2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase22-4.7.2-${{ runner.os }}
+          path: ci-artifacts/
+          retention-days: 7
