@@ -201,46 +201,82 @@ static func _plant_anchor(parent: Node3D,name_value: String,at: Vector2) -> Node
 	anchor.set_meta("north_surface_anchor",true);parent.add_child(anchor)
 	return anchor
 
+static func _north_bank_basis(at: Vector2,yaw: float,half_length: float=0.12) -> Basis:
+	var direction:=Vector2(cos(yaw),-sin(yaw))
+	var dy: float=(NorthReed.surface_height(at+direction*half_length)-NorthReed.surface_height(at-direction*half_length))/(half_length*2.0)
+	var x:=Vector3(direction.x,dy,direction.y).normalized()
+	var across:=Vector2(-direction.y,direction.x)*0.08
+	var cross_dy: float=(NorthReed.surface_height(at+across)-NorthReed.surface_height(at-across))/0.16
+	var z:=Vector3(-direction.y,cross_dy,direction.x).normalized()
+	var y:=z.cross(x).normalized();z=x.cross(y).normalized()
+	return Basis(x,y,z)
+
+static func _north_leaf_mesh() -> ArrayMesh:
+	# A rooted, gently curling lanceolate blade instead of a floating straight bar.
+	var st:=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rows: Array=[Vector3(0,0,0),Vector3(0,0.18,0.04),Vector3(0,0.36,0.15),Vector3(0,0.46,0.34),Vector3(0,0.42,0.52)]
+	var widths: Array=[0.012,0.047,0.039,0.024,0.0]
+	for i in range(rows.size()-1):
+		var a: Vector3=rows[i]+Vector3.LEFT*widths[i]
+		var b: Vector3=rows[i]+Vector3.RIGHT*widths[i]
+		var c: Vector3=rows[i+1]+Vector3.RIGHT*widths[i+1]
+		var d: Vector3=rows[i+1]+Vector3.LEFT*widths[i+1]
+		_push_tri(st,a,b,c);_push_tri(st,a,c,d)
+	return st.commit()
+
 static func _north_reed_cover(root: Node3D,c: Dictionary) -> void:
 	# The user's collision exception applies only to reed_north. The old box is never created.
 	_reed_water_skirt(root,c)
 	var terrain:=MeshInstance3D.new();terrain.name="NorthReedTerrain";terrain.mesh=NorthReed.mesh()
-	terrain.set_surface_override_material(0,_material_variant(Color("88755e"),"plaster",1.35,0.14))
-	terrain.set_surface_override_material(1,_material_variant(Color("8fa66b"),"foam",3.8,0.12))
+	var bank_material:=ShaderMaterial.new();bank_material.shader=preload("res://shaders/outdoor20/north_bank.gdshader")
+	# Both original hull surfaces use one continuous local-space material across their seam.
+	terrain.set_surface_override_material(0,bank_material);terrain.set_surface_override_material(1,bank_material)
 	root.add_child(terrain)
 	var body:=StaticBody3D.new();body.name="CoverPhysics";body.collision_layer=1;body.collision_mask=0;root.add_child(body)
 	var collision:=CollisionShape3D.new();var shape:=ConvexPolygonShape3D.new();shape.points=NorthReed.points()
 	collision.shape=shape;body.add_child(collision)
 	var decor:=Node3D.new();decor.name="NorthReedDecor";root.add_child(decor)
-	for i in range(5):
-		var at:=Vector2(-1.35+float(i)*0.65,-0.35+0.28*sin(float(i)*1.8))
+	var moss_specs: Array=[Vector4(-1.72,0.44,0.46,0.23),Vector4(-1.29,-1.05,0.34,0.27),Vector4(1.10,-0.88,0.51,0.28),Vector4(1.92,0.63,0.38,0.22),Vector4(-0.31,-0.46,0.29,0.19)]
+	for i in range(moss_specs.size()):
+		var spec: Vector4=moss_specs[i];var at:=Vector2(spec.x,spec.y)
 		var anchor:=_plant_anchor(decor,"Moss_%02d"%i,at)
-		var cap:=Art.ball(anchor,Vector3(0,0.035,0),Vector3(0.40,0.20,0.28),Color("97b56f"),"foam")
-		cap.rotation.y=0.4*float(i)
-	for side in [-1,1]:
-		for i in range(3):
-			var at:=Vector2(float(side)*(2.95-0.12*i),-0.66+0.40*i)
-			var anchor:=_plant_anchor(decor,"Root_%s_%d"%[str(side),i],at)
-			var rootlog:=Art.box(anchor,Vector3(0,0.015,0),Vector3(0.42,0.12,0.16),Color("8f6a45"),"wood",0.04)
-			rootlog.rotation.y=side*(0.42-0.11*i)
-			# Follow the bank slope along the root, keeping its ends embedded in soil.
-			var axis:=Vector2(cos(rootlog.rotation.y),-sin(rootlog.rotation.y))*0.16
-			rootlog.rotation.z=atan2(NorthReed.surface_height(at+axis)-NorthReed.surface_height(at-axis),0.32)
-	for i in range(24):
-		var angle:=TAU*float(i)/24.0
-		var at:=Vector2(2.55*cos(angle),2.13*sin(angle))
+		var cap:=Art.ball(anchor,Vector3(0,-0.022,0),Vector3(spec.z,0.08+0.01*(i%3),spec.w),Color("86a267").lightened(0.025*(i%3)),"foam")
+		cap.name="MossCap";cap.basis=_north_bank_basis(at,0.73*i)*Basis.from_scale(cap.scale)
+	var root_specs: Array=[Vector4(-2.67,0.35,0.26,0.53),Vector4(-2.43,0.62,-0.34,0.39),Vector4(-2.55,-0.19,0.68,0.45),Vector4(2.48,0.48,-0.53,0.55),Vector4(2.69,0.09,0.32,0.35),Vector4(2.25,0.94,-0.81,0.47)]
+	for i in range(root_specs.size()):
+		var spec: Vector4=root_specs[i];var at:=Vector2(spec.x,spec.y)
+		var anchor:=_plant_anchor(decor,"Root_%02d"%i,at)
+		var axis:=Vector2(cos(spec.z),-sin(spec.z))*spec.w*0.5
+		var ends_y: float=(NorthReed.surface_height(at+axis)+NorthReed.surface_height(at-axis))*0.5
+		var root_frame:=Node3D.new();root_frame.name="BankFrame";root_frame.basis=_north_bank_basis(at,spec.z,spec.w*0.5);root_frame.position.y=ends_y-anchor.position.y-0.012;anchor.add_child(root_frame)
+		var log_mesh:=CylinderMesh.new();log_mesh.top_radius=0.036;log_mesh.bottom_radius=0.060;log_mesh.height=spec.w;log_mesh.radial_segments=7
+		var rootlog:=_mesh_node(root_frame,log_mesh,Color("81613f").lightened(0.028*(i%3)),"wood",0.9,0.15)
+		rootlog.name="RootLog";rootlog.rotation.z=PI*0.5
+	# Four loose patches, with open front/centre areas and staggered depth inside each patch.
+	# x/z/height/yaw are authored constants; no match RNG or occupancy affects decoration.
+	var reed_specs: Array=[
+		Vector4(-1.82,-0.84,1.26,0.35),Vector4(-1.45,-1.14,1.57,-0.60),Vector4(-1.19,-0.83,1.08,1.10),Vector4(-1.63,-1.47,1.38,-1.25),Vector4(-0.93,-1.31,1.61,0.80),Vector4(-1.10,-1.68,0.96,-0.25),Vector4(-0.70,-1.04,1.25,1.65),
+		Vector4(1.02,-1.07,1.35,-0.70),Vector4(1.49,-1.31,1.58,0.50),Vector4(1.74,-0.93,1.06,-1.20),Vector4(1.21,-1.66,1.16,1.30),Vector4(1.82,-1.42,0.89,0.10),Vector4(1.32,-0.77,1.45,1.90),
+		Vector4(-2.14,0.55,1.27,-0.50),Vector4(-2.39,0.86,0.98,0.95),Vector4(-1.84,0.94,1.42,-1.10),Vector4(-2.22,1.19,0.80,0.30),Vector4(-1.68,0.46,1.17,1.50),Vector4(-2.50,0.30,0.89,-0.85),
+		Vector4(1.73,0.79,1.36,0.60),Vector4(2.12,1.00,1.05,-0.50),Vector4(1.57,1.27,1.19,1.40),Vector4(2.30,0.64,0.85,-1.20),Vector4(1.93,0.39,1.48,0.15)
+	]
+	var leaf_mesh:=_north_leaf_mesh()
+	for i in range(reed_specs.size()):
+		var spec: Vector4=reed_specs[i];var at:=Vector2(spec.x,spec.y)
 		var anchor:=_plant_anchor(decor,"Reed_%02d"%i,at)
-		# One local stalk frame keeps the head and leaf attached as the stem tilts.
-		var stalk:=Node3D.new();anchor.add_child(stalk)
-		stalk.rotation=Vector3(0.05*sin(angle*2.0),angle,0.06*cos(angle*1.7))
-		var stem:=CylinderMesh.new();stem.top_radius=0.018;stem.bottom_radius=0.028;stem.height=1.00+0.18*float(i%4);stem.radial_segments=8
-		var stem_node:=MeshInstance3D.new();stem_node.name="Stem";stem_node.mesh=stem;stem_node.material_override=Art.material(Color("849965"),"wood")
+		# One frame keeps heads/leaves connected to their planted stalk under varied lean.
+		var stalk:=Node3D.new();stalk.name="Stalk";anchor.add_child(stalk)
+		stalk.rotation=Vector3(0.12*sin(float(i)*2.17+0.4),spec.w,0.13*cos(float(i)*1.73+0.8))
+		var stem:=CylinderMesh.new();stem.top_radius=0.017;stem.bottom_radius=0.027;stem.height=spec.z;stem.radial_segments=8
+		var stem_node:=MeshInstance3D.new();stem_node.name="Stem";stem_node.mesh=stem;stem_node.material_override=Art.material(Color("718758").lightened(0.035*(i%3)),"wood")
 		stem_node.position.y=stem.height*0.5-0.035;stalk.add_child(stem_node)
 		if i%2==0:
-			var leaf:=Art.box(stalk,Vector3(0,stem.height*0.52,0.18),Vector3(0.03,0.01,0.58),Color("a9bc79"),"foam",0.014)
-			leaf.name="Leaf";leaf.rotation=Vector3(-0.20,0.16,0.52)
-		var head:=Art.ball(stalk,Vector3(0,stem.height-0.015,0),Vector3(0.08,0.18,0.08),Color("b18f61"),"foam")
-		head.name="Head"
+			var leaf:=MeshInstance3D.new();leaf.name="Leaf";leaf.mesh=leaf_mesh
+			var leaf_material: StandardMaterial3D=Art.material(Color("91ac68").lightened(0.035*(i%3)),"foam").duplicate()
+			leaf_material.cull_mode=BaseMaterial3D.CULL_DISABLED;leaf.material_override=leaf_material
+			leaf.position.y=-0.01;leaf.scale=Vector3.ONE*(0.92+0.13*(i%3));leaf.rotation.y=0.71*i;stalk.add_child(leaf)
+		var head:=Art.ball(stalk,Vector3(0,stem.height-0.025,0),Vector3(0.063+0.006*(i%3),0.145+0.014*(i%4),0.067),Color("aa8754").lightened(0.018*(i%3)),"foam")
+		head.name="Head";head.rotation=Vector3(0.08*sin(i*1.7),0.37*i,0.09*cos(i*2.3))
 
 static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
 	_reed_water_skirt(root,c)

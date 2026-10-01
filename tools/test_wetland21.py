@@ -20,6 +20,8 @@ def main():
     if not re.search(r'WETLAND21_UNIT_RESULT: \d+ checks, 0 failures',text):raise RuntimeError('Wetland assertions failed')
     text=run('wetland22-north',['--headless','--script','res://tests/wetland22/test_north.gd','--','--quality-test'],'NORTH_REED22_UNIT_RESULT:')
     if not re.search(r'NORTH_REED22_UNIT_RESULT: \d+ checks, 0 failures',text):raise RuntimeError('North reed terrain assertions failed')
+    text=run('wetland22-polish',['--headless','--script','res://tests/wetland22/test_polish.gd','--','--quality-test'],'NORTH_REED22_POLISH_RESULT:')
+    if not re.search(r'NORTH_REED22_POLISH_RESULT: \d+ checks, 0 failures',text):raise RuntimeError('North reed polish assertions failed')
     run('wetland21-pine',['--headless','--script','res://tests/pine21/test_pine.gd','--','--quality-test'],'PINE21_UNIT_RESULT: 126 checks, 0 failures')
     run('wetland21-sync',['--headless','--script','res://tests/smash/test_sync.gd','--','--quality-test','--pine21'],'SYNC_UNIT_RESULT: 94 checks, 0 failures')
     run('wetland21-entry',['--headless','--quit-after','360','--','--phase4-smoke'],'PHASE4_SMOKE_READY')
