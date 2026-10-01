@@ -39,6 +39,7 @@ func configure(round_seed: int) -> void:
 
 func reset() -> void:
 	super.reset();wet_until.assign([-1.0,-1.0,-1.0,-1.0]);sample_emitted=false
+	for visual in reed_visuals:WetArt.reset_reed_print(visual)
 	for i in range(tufts.size()):
 		if is_instance_valid(tufts[i]):tufts[i].rotation=Vector3.ZERO
 	for event in reed_events:event.time=-100.0;event.direction=Vector3.ZERO
@@ -85,6 +86,8 @@ func make_track(p: Vector3,id: int,kind: String) -> void:
 	super.make_track(p,id,kind)
 	kind=tracks[slot].get("kind",kind) # Pine may canonicalize step -> leaves inside its override.
 	if wet_visuals.size()!=MAX_TRACKS:return
+	WetArt.reset_reed_print(reed_visuals[slot])
+	if kind=="reed21" and wetland_active:WetArt.place_reed_print(reed_visuals[slot],tufts)
 	# Restore each reused slot exactly; Pine leaves and ordinary footprints remain distinct.
 	for child in tracks[slot].node.get_children():
 		if kind=="water21":child.visible=child==wet_visuals[slot]
@@ -127,3 +130,5 @@ func tick(delta: float) -> void:
 			bend=sin(age*11.0)*0.18*pow(1-age/REED_SECONDS,2)
 		var d: Vector3=reed_events[i].direction
 		tufts[i].rotation=Vector3(d.z*bend,0,-d.x*bend)
+	for i in range(tracks.size()):
+		if tracks[i].node.visible and tracks[i].get("kind","")=="reed21":WetArt.update_reed_print(reed_visuals[i])

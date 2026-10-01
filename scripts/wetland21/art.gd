@@ -40,7 +40,111 @@ static func reed_print(parent: Node3D) -> Node3D:
 	for i in range(3):
 		var n:=Art.box(root,Vector3(-0.13+0.13*i,0.041,0.02*(i%2)),Vector3(0.043,0.016,0.34),Color("d9c791"),"wood",0.006)
 		n.rotation.y=-0.45+0.35*i;no_shadow(n)
+		n.set_meta("reed_rest",n.transform)
 	return root
+
+# Only the three clue meshes are fitted/attached. Their pooled parent and recorded
+# event point stay unchanged, so investigation never reads a decorative position.
+static func reset_reed_print(root: Node3D) -> void:
+	for strand: MeshInstance3D in root.get_children():
+		strand.transform=strand.get_meta("reed_rest")
+		if strand.has_meta("reed_surface"):strand.remove_meta("reed_surface")
+		if strand.has_meta("reed_anchor"):strand.remove_meta("reed_anchor")
+
+# Clip an actual terrain triangle to the strand's rectangular footprint. The
+# maximum is exact for the piecewise-planar mound, including seams and rims.
+static func _clip_reed_footprint(polygon: Array[Vector3],axis: int,edge: float,keep_above: bool) -> Array[Vector3]:
+	var result: Array[Vector3]=[]
+	if polygon.is_empty():return result
+	var previous: Vector3=polygon[-1]
+	var previous_in: bool=previous[axis]>=edge if keep_above else previous[axis]<=edge
+	for point in polygon:
+		var inside: bool=point[axis]>=edge if keep_above else point[axis]<=edge
+		if inside!=previous_in:result.append(previous.lerp(point,(edge-previous[axis])/(point[axis]-previous[axis])))
+		if inside:result.append(point)
+		previous=point;previous_in=inside
+	return result
+
+static func _reed_support(surface: MeshInstance3D,fitted: Transform3D,bounds: AABB) -> float:
+	var local:=fitted.affine_inverse()*surface.global_transform
+	var faces: PackedVector3Array=surface.get_meta("reed_clue_faces")
+	var highest:=-INF
+	for i in range(0,faces.size(),3):
+		var polygon: Array[Vector3]=[local*faces[i],local*faces[i+1],local*faces[i+2]]
+		for axis in [0,2]:
+			polygon=_clip_reed_footprint(polygon,axis,bounds.position[axis],true)
+			polygon=_clip_reed_footprint(polygon,axis,bounds.end[axis],false)
+		for point in polygon:highest=maxf(highest,point.y)
+	return highest
+
+static func place_reed_print(root: Node3D,tufts: Array[Node3D]) -> void:
+	reset_reed_print(root)
+	for strand: MeshInstance3D in root.get_children():
+		var rest: Transform3D=strand.get_meta("reed_rest")
+		var at:=strand.global_position
+		var highest: Dictionary={}
+		for tuft in tufts:
+			if not is_instance_valid(tuft):continue
+			var surface: MeshInstance3D=tuft.get_meta("reed_clue_surface")
+			var from:=surface.to_local(Vector3(at.x,surface.global_position.y+2.0,at.z))
+			var to:=surface.to_local(Vector3(at.x,surface.global_position.y-2.0,at.z))
+			var faces: PackedVector3Array=surface.get_meta("reed_clue_faces")
+			for i in range(0,faces.size(),3):
+				var hit=Geometry3D.segment_intersects_triangle(from,to,faces[i],faces[i+1],faces[i+2])
+				if hit==null:continue
+				var point:=surface.to_global(hit)
+				if not highest.is_empty() and point.y<=highest.point.y:continue
+				var normal:=surface.global_basis.inverse().transposed()*((faces[i+1]-faces[i]).cross(faces[i+2]-faces[i]))
+				normal=normal.normalized()
+				if normal.y<0:normal=-normal
+				highest={"point":point,"normal":normal,"surface":surface}
+		var fitted:=strand.global_transform
+		var support: MeshInstance3D=null
+		if not highest.is_empty():
+			var normal: Vector3=highest.normal
+			var forward:=strand.global_basis.z.slide(normal).normalized()
+			var right:=normal.cross(forward).normalized()
+			fitted=Transform3D(Basis(right,normal,right.cross(normal)),highest.point+normal*rest.origin.y)
+			support=highest.surface
+		var bounds:=strand.mesh.get_aabb()
+		var clearance:=0.0
+		# A rigid strand can cross several facets or bridge the rim. Check its
+		# entire footprint instead of trusting the center's tangent plane alone.
+		for tuft in tufts:
+			if not is_instance_valid(tuft):continue
+			var surface: MeshInstance3D=tuft.get_meta("reed_clue_surface")
+			var world_bounds: AABB=surface.global_transform*surface.mesh.get_aabb()
+			var strand_bounds: AABB=fitted*bounds
+			if strand_bounds.end.x<world_bounds.position.x or strand_bounds.position.x>world_bounds.end.x or strand_bounds.end.z<world_bounds.position.z or strand_bounds.position.z>world_bounds.end.z:continue
+			var height:=_reed_support(surface,fitted,bounds)
+			if is_finite(height):
+				if support==null:support=surface
+				clearance=maxf(clearance,height-bounds.position.y+0.003)
+		if support==null:continue # Bare ground retains the exact authored transform.
+		# Preserve at least the authored floor clearance at every tilted corner.
+		var floor_y:=root.global_position.y+rest.origin.y+bounds.position.y
+		for corner in range(8):
+			var bottom:=fitted*bounds.get_endpoint(corner)
+			clearance=maxf(clearance,(floor_y-bottom.y)/fitted.basis.y.y)
+		fitted.origin+=fitted.basis.y*clearance
+		strand.global_transform=fitted
+		strand.set_meta("reed_surface",support)
+		strand.set_meta("reed_anchor",support.global_transform.affine_inverse()*fitted)
+
+static func update_reed_print(root: Node3D) -> void:
+	# Follow only the sampled decorative surface's existing sway, never an actor.
+	for strand: MeshInstance3D in root.get_children():
+		if not strand.has_meta("reed_surface"):continue
+		var surface: MeshInstance3D=strand.get_meta("reed_surface")
+		if not is_instance_valid(surface):continue
+		var fitted: Transform3D=surface.global_transform*strand.get_meta("reed_anchor")
+		var rest: Transform3D=strand.get_meta("reed_rest")
+		var bounds:=strand.mesh.get_aabb()
+		var floor_y:=root.global_position.y+rest.origin.y+bounds.position.y
+		var lift:=0.0
+		for corner in range(8):lift=maxf(lift,floor_y-(fitted*bounds.get_endpoint(corner)).y)
+		fitted.origin.y+=lift
+		strand.global_transform=fitted
 
 static func _material_variant(color: Color,kind: String,scale_value: float,normal_scale: float=-1.0) -> StandardMaterial3D:
 	var mat: StandardMaterial3D=Art.material(color,kind).duplicate()
@@ -149,7 +253,9 @@ static func _reactive_tuft(parent: Node3D,index: int) -> void:
 		_square_ring(Vector2(0.26,0.24),Vector2(0.08,0.08),0.08,0.7+index),
 		_square_ring(Vector2(0.14,0.12),Vector2(0.06,0.05),0.16,1.1+index,0.04)
 	])
-	_mesh_node(parent,mound,Color("76845f"),"plaster",1.5,0.12)
+	var surface:=_mesh_node(parent,mound,Color("76845f"),"plaster",1.5,0.12)
+	parent.set_meta("reed_clue_surface",surface)
+	surface.set_meta("reed_clue_faces",mound.get_faces())
 	for i in range(4):
 		var rootlog:=Art.box(parent,Vector3(-0.18+0.12*i,0.10,-0.12+0.06*(i%2)),Vector3(0.24,0.08,0.10),Color("8c6b49"),"wood",0.035)
 		rootlog.rotation.y=-0.45+0.28*i

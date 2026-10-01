@@ -22,6 +22,7 @@ def main():
     if not re.search(r'NORTH_REED22_UNIT_RESULT: \d+ checks, 0 failures',text):raise RuntimeError('North reed terrain assertions failed')
     text=run('wetland22-polish',['--headless','--script','res://tests/wetland22/test_polish.gd','--','--quality-test'],'NORTH_REED22_POLISH_RESULT:')
     if not re.search(r'NORTH_REED22_POLISH_RESULT: \d+ checks, 0 failures',text):raise RuntimeError('North reed polish assertions failed')
+    run('wetland22-reed-clue',['--headless','--fixed-fps','60','--script','res://tests/wetland22/test_reed_clue.gd','--','--quality-test'],'REED_CLUE22_RESULT: 217 checks, 0 failures')
     run('wetland22-playability',['--headless','--fixed-fps','60','--script','res://tests/wetland22/test_playability.gd','--','--quality-test'],'NORTH_REED22_PLAYABILITY_RESULT: 110 checks, 0 failures')
     run('wetland21-pine',['--headless','--script','res://tests/pine21/test_pine.gd','--','--quality-test'],'PINE21_UNIT_RESULT: 126 checks, 0 failures')
     run('wetland21-sync',['--headless','--script','res://tests/smash/test_sync.gd','--','--quality-test','--pine21'],'SYNC_UNIT_RESULT: 94 checks, 0 failures')
@@ -37,6 +38,7 @@ def main():
         (out/'wetland21-matches.json').write_text(json.dumps(rows,indent=2)+'\n',encoding='utf-8')
     if a.capture:
         run('wetland21-render',['--rendering-method','gl_compatibility','--fixed-fps','30','--script','res://tests/wetland21/capture.gd','--','--quality-test'],'WETLAND21_CAPTURE_PASS',420)
+        run('wetland22-reed-render',['--rendering-method','gl_compatibility','--fixed-fps','60','--script','res://tests/wetland22/capture_reed_clue.gd','--','--quality-test','--match-seed=8027'],'REED_CLUE22_CAPTURE_RESULT: 27 checks, 0 failures',420)
         for name in ['water','water_expired','reeds','reeds_settled','comfort','gameplay']:
             if (out/('wetland21_'+name+'.png')).stat().st_size<1000:raise RuntimeError('Missing render '+name)
     print('WETLAND21_SUITE_PASS')

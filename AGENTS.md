@@ -1,3 +1,14 @@
+# Phase22 — approved reed-clue surface placement exception
+
+The user explicitly approved fixing the pre-existing reduced-motion reed clue
+occlusion. Only the existing three reed-clue meshes may be fitted to the actual
+reactive mound surface and follow its existing sway. Keep recorded event/world
+coordinates, timers, sounds, investigation, pooled parents, water visuals,
+terrain meshes/colliders, seeds and all other dressing unchanged. Bare-ground
+placements and every reused/reset slot must restore their authored transforms.
+Preserve all existing tests; add actual surface/rim/slot and normal-eye pixel
+regressions. Same draft PR22; no merge/deploy.
+
 # Phase22 — north reed terrain exception
 
 Read docs/PHASE22_NORTH_REED.md. The user's explicit exception permits changing
