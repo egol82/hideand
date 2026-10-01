@@ -4,6 +4,8 @@ const P=preload("res://scripts/outdoor20/plans.gd")
 const Art=preload("res://scripts/phase4/art.gd")
 const Toy=preload("res://scripts/toy_factory.gd")
 const Batch=preload("res://scripts/world19/batches.gd")
+const RING_STEPS:=16
+
 static func build(a) -> void:
 	a.config=P.spec(a.map_id);a.dimensions=a.config.size;a.active_rect=Rect2(-a.dimensions*0.5,a.dimensions)
 	a.map_plan=P.layout(a.map_id);a.surface_zones.assign(a.map_plan.zones);a.spawn_points.assign(a.map_plan.spawn)
@@ -50,14 +52,17 @@ static func build(a) -> void:
 	var root:=Batch.build(decor);root.name="OutdoorAccents";a.add_child(root)
 	var label:=Label3D.new();label.text=a.config.title;label.font_size=40;label.pixel_size=0.013;label.position=Vector3(0,3.3,-a.dimensions.y*0.5+0.4);a.add_child(label)
 	a._build_navigation()
+
 static func _blocked(a,p: Vector2) -> bool:
 	for r in a.obstacles:
 		if r.grow(0.35).has_point(p):return true
 	for z in a.surface_zones:
 		if z.rect.has_point(p):return true
 	return false
+
 static func piece(p: Array,shape: String,at: Vector3,size3: Vector3,color: Color,material: String,small: bool) -> void:
 	p.append({"shape":shape,"at":at,"size":size3,"color":color,"material":material,"small":small,"rotation":Vector3.ZERO})
+
 static func _cover(a,c: Dictionary) -> void:
 	var root:=Node3D.new();root.name="Cover_"+c.id;root.position=Vector3(c.at.x,0,c.at.y);a.add_child(root)
 	root.set_meta("cover20",true)
@@ -108,37 +113,118 @@ static func _cover(a,c: Dictionary) -> void:
 	else:
 		for side in [-1,1]:
 			Art.box(root,Vector3(side*(c.size.x*0.5+0.015),c.height*0.5,0),Vector3(0.03,c.height*0.70,c.size.y*0.70),Color("dbc39b"),"wood",0.01)
+
+static func _material_variant(color: Color,kind: String,scale_value: float,normal_scale: float=-1.0) -> StandardMaterial3D:
+	var mat: StandardMaterial3D=Art.material(color,kind).duplicate()
+	if mat.uv1_triplanar:mat.uv1_scale=Vector3.ONE*scale_value
+	if normal_scale>=0.0 and mat.normal_enabled:mat.normal_scale=normal_scale
+	return mat
+
+static func _mesh_node(parent: Node3D,mesh: Mesh,color: Color,kind: String,scale_value: float,normal_scale: float=-1.0) -> MeshInstance3D:
+	var node:=MeshInstance3D.new();node.mesh=mesh;node.material_override=_material_variant(color,kind,scale_value,normal_scale);parent.add_child(node)
+	return node
+
+static func _push_tri(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,uv_scale: float=0.11) -> void:
+	var normal: Vector3=(b-a).cross(c-a)
+	if normal.length_squared()<0.000001:return
+	normal=normal.normalized()
+	st.set_normal(normal);st.set_uv(Vector2(a.x,a.z)*uv_scale);st.add_vertex(a)
+	st.set_normal(normal);st.set_uv(Vector2(b.x,b.z)*uv_scale);st.add_vertex(b)
+	st.set_normal(normal);st.set_uv(Vector2(c.x,c.z)*uv_scale);st.add_vertex(c)
+
+static func _square_ring(half: Vector2,margin: Vector2,base_y: float,phase: float,relief: float=0.0) -> Array:
+	var ring: Array=[]
+	for i in range(RING_STEPS):
+		var angle:=TAU*float(i)/float(RING_STEPS)
+		var direction:=Vector2(cos(angle),sin(angle))
+		var denom:=maxf(absf(direction.x),absf(direction.y))
+		var square:=direction/denom
+		var expand_x:=margin.x*(0.76+0.16*sin(angle*3.0+phase)+0.08*cos(angle*5.0-phase*0.4))
+		var expand_z:=margin.y*(0.74+0.18*cos(angle*2.0+phase*0.7)+0.07*sin(angle*4.0-phase))
+		expand_x=maxf(expand_x,margin.x*0.34)
+		expand_z=maxf(expand_z,margin.y*0.34)
+		var py:=base_y+relief*(0.5+0.25*sin(angle*2.0+phase)+0.25*cos(angle*3.0-phase*0.6))
+		ring.append(Vector3(square.x*(half.x+expand_x),py,square.y*(half.y+expand_z)))
+	return ring
+
+static func _cap_center(ring: Array,flip: bool=false) -> Vector3:
+	var center:=Vector3.ZERO
+	for p in ring:center+=p
+	center/=max(1,ring.size())
+	if flip:center.y-=0.001
+	return center
+
+static func _closed_mass(rings: Array) -> ArrayMesh:
+	var st:=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var count: int=rings[0].size()
+	for layer in range(rings.size()-1):
+		var lower: Array=rings[layer]
+		var upper: Array=rings[layer+1]
+		for i in range(count):
+			var j:=int((i+1)%count)
+			var a: Vector3=lower[i]
+			var b: Vector3=lower[j]
+			var c: Vector3=upper[j]
+			var d: Vector3=upper[i]
+			_push_tri(st,a,b,c)
+			_push_tri(st,a,c,d)
+	var bottom: Array=rings[0]
+	var bottom_center: Vector3=_cap_center(bottom,true)
+	for i in range(count):
+		var j:=int((i+1)%count)
+		_push_tri(st,bottom_center,bottom[j],bottom[i])
+	var top: Array=rings[rings.size()-1]
+	var top_center: Vector3=_cap_center(top)
+	for i in range(count):
+		var j:=int((i+1)%count)
+		_push_tri(st,top_center,top[i],top[j])
+	return st.commit()
+
 static func _wetland_reed_cover(root: Node3D,c: Dictionary) -> void:
-	var mud:=Color("6e7f5e")
-	var wet:=Color("7ca2a0")
-	Art.box(root,Vector3(0,0.16,0),Vector3(c.size.x+0.85,0.22,c.size.y+0.95),wet,"ceramic",0.22)
-	Art.box(root,Vector3(0,0.32,0),Vector3(c.size.x+0.35,0.24,c.size.y+0.40),Color("7c8b65"),"fabric",0.24)
-	# The rounded mesh's inner box equals the entire unchanged collider.
-	# A 0.06m opaque skin covers its corners, not just the centre or maximum height.
-	var skin:=0.06
-	Art.box(root,Vector3(0,c.height*0.5,0),Vector3(c.size.x,c.height,c.size.y)+Vector3.ONE*skin*2.0,mud,"fabric",skin)
-	Art.box(root,Vector3(-c.size.x*0.10,c.height*0.91,-c.size.y*0.08),Vector3(c.size.x*0.46,c.height*0.42,c.size.y*0.44),Color("7f8f69"),"fabric",0.28)
-	Art.box(root,Vector3(c.size.x*0.15,c.height*0.94,c.size.y*0.08),Vector3(c.size.x*0.40,c.height*0.38,c.size.y*0.36),Color("73845f"),"fabric",0.24)
+	var half:=c.size*0.5
+	var water_mesh:=_closed_mass([
+		_square_ring(half+Vector2(0.28,0.24),Vector2(0.08,0.08),0.00,0.3),
+		_square_ring(half+Vector2(0.20,0.18),Vector2(0.06,0.06),0.030,0.5),
+		_square_ring(half+Vector2(0.12,0.12),Vector2(0.05,0.05),0.055,0.7,0.010)
+	])
+	var water:=_mesh_node(root,water_mesh,Color("74aaae"),"ceramic",1.0)
+	water.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mud_mesh:=_closed_mass([
+		_square_ring(half+Vector2(0.24,0.22),Vector2(0.10,0.09),0.00,0.9),
+		_square_ring(half+Vector2(0.18,0.16),Vector2(0.08,0.08),0.26,1.0),
+		_square_ring(half+Vector2(0.12,0.12),Vector2(0.07,0.06),0.92,1.2),
+		_square_ring(half+Vector2(0.09,0.09),Vector2(0.05,0.05),1.82,1.35),
+		_square_ring(half+Vector2(0.07,0.07),Vector2(0.04,0.04),2.03,1.55,0.14)
+	])
+	_mesh_node(root,mud_mesh,Color("7f8766"),"plaster",1.35,0.14)
+	var moss_mesh:=_closed_mass([
+		_square_ring(half+Vector2(0.08,0.08),Vector2(0.03,0.03),1.88,2.0),
+		_square_ring(half+Vector2(0.03,0.03),Vector2(0.03,0.03),2.08,2.2,0.08)
+	])
+	var moss:=_mesh_node(root,moss_mesh,Color("8fac73"),"foam",3.8,0.12)
+	moss.position.y=0.01
+	for i in range(5):
+		var cap:=Art.ball(root,Vector3(-half.x*0.34+float(i)*half.x*0.34,2.02+0.04*(i%2),-half.y*0.08+0.20*sin(float(i))),Vector3(0.40,0.20,0.28),Color("97b56f"),"foam")
+		cap.rotation.y=0.4*float(i)
 	for side in [-1,1]:
-		for i in range(4):
-			var rootlog:=Art.box(root,Vector3(side*(c.size.x*0.42+0.08*i),0.18,-c.size.y*0.12+0.20*i),Vector3(0.42,0.12,0.14),Color("8e6b46"),"wood",0.04)
-			rootlog.rotation.y=side*0.38+0.18*i
+		for i in range(3):
+			var rootlog:=Art.box(root,Vector3(side*(half.x+0.08)-0.06*side*i,0.13,-half.y*0.22+0.24*i),Vector3(0.42,0.12,0.16),Color("8f6a45"),"wood",0.04)
+			rootlog.rotation.y=side*(0.42-0.11*i)
 	var ring:=Node3D.new();root.add_child(ring)
-	for i in range(22):
-		var angle:=TAU*float(i)/22.0
-		var edge:=Vector3(cos(angle)*c.size.x*0.42,0,sin(angle)*c.size.y*0.38)
-		var stem:=CylinderMesh.new();stem.top_radius=0.018;stem.bottom_radius=0.028;stem.height=1.05+0.22*float(i%4)
+	for i in range(24):
+		var angle:=TAU*float(i)/24.0
+		var dx:=sign(cos(angle))*half.x*(0.58+0.42*absf(cos(angle)))
+		var dz:=sign(sin(angle))*half.y*(0.56+0.44*absf(sin(angle)))
+		var edge:=Vector3(dx,0,dz)
+		var stem:=CylinderMesh.new();stem.top_radius=0.018;stem.bottom_radius=0.028;stem.height=1.00+0.18*float(i%4);stem.radial_segments=8
 		var stem_node:=MeshInstance3D.new();stem_node.mesh=stem;stem_node.material_override=Art.material(Color("849965"),"wood")
-		# Stem feet at about height-0.12 now overlap the continuous height+0.06 mud.
-		stem_node.position=edge+Vector3(0,c.height+stem.height*0.5-0.12,0);stem_node.rotation=Vector3(0.05*sin(angle*2.0),angle,0.05*cos(angle*1.6));ring.add_child(stem_node)
-		var head:=Art.ball(ring,edge+Vector3(0,c.height+stem.height-0.04,0),Vector3(0.08,0.18,0.08),Color("b18f61"),"foam")
-		head.rotation.y=angle
+		stem_node.position=edge+Vector3(0,2.05+stem.height*0.5,0);stem_node.rotation=Vector3(0.05*sin(angle*2.0),angle,0.06*cos(angle*1.7));ring.add_child(stem_node)
 		if i%2==0:
-			var leaf:=Art.box(ring,edge+Vector3(0,c.height+stem.height*0.55,0),Vector3(0.03,0.01,0.54),Color("a8bc79"),"foam",0.014)
-			leaf.rotation=Vector3(-0.22,angle+0.25,0.62)
-	for i in range(7):
-		var shrub:=Art.ball(root,Vector3(-c.size.x*0.22+0.42*i, c.height+0.22+0.08*(i%2), -c.size.y*0.12+0.28*sin(i*0.9)),Vector3(0.22,0.16,0.18),Color("92b36d"),"foam")
-		shrub.rotation.y=0.7*i
+			var leaf:=Art.box(ring,edge+Vector3(0,2.52+0.08*(i%3),0),Vector3(0.03,0.01,0.58),Color("a9bc79"),"foam",0.014)
+			leaf.rotation=Vector3(-0.20,angle+0.16,0.52)
+		var head:=Art.ball(ring,edge+Vector3(0,3.00+0.18*(i%4),0),Vector3(0.08,0.18,0.08),Color("b18f61"),"foam")
+		head.rotation.y=angle
+
 static func _wetland_willow(root: Node3D,height: float) -> void:
 	var trunk_tint:=Color("8b6b4a")
 	for i in range(3):
@@ -155,16 +241,38 @@ static func _wetland_willow(root: Node3D,height: float) -> void:
 		for s in [-1,1]:
 			var strand:=Art.box(root,canopy_points[i]+Vector3(s*0.44,-0.78+0.12*i,0.12*s),Vector3(0.05,1.12-0.08*i,0.05),Color("87aa8a"),"foam",0.02)
 			strand.rotation=Vector3(0.0,0.22*i,s*0.16)
+
 static func _wetland_rock_cover(root: Node3D,c: Dictionary,tint: Color) -> void:
-	# Full-height opaque stone encloses the existing box, including upper corners.
-	var skin:=0.06
-	Art.box(root,Vector3(0,c.height*0.5,0),Vector3(c.size.x,c.height,c.size.y)+Vector3.ONE*skin*2.0,tint,"plaster",skin)
-	Art.box(root,Vector3(-c.size.x*0.12,c.height*0.94,-c.size.y*0.08),Vector3(c.size.x*0.62,c.height*0.34,c.size.y*0.56),tint.lightened(0.08),"plaster",0.20)
-	Art.box(root,Vector3(c.size.x*0.22,c.height*0.92,c.size.y*0.15),Vector3(c.size.x*0.36,c.height*0.26,c.size.y*0.34),tint.darkened(0.08),"plaster",0.18)
+	var half:=c.size*0.5
+	var base_phase:=0.43+half.x*0.07+half.y*0.11
+	var main_mesh:=_closed_mass([
+		_square_ring(half+Vector2(0.22,0.22),Vector2(0.12,0.12),0.00,base_phase),
+		_square_ring(half+Vector2(0.18,0.18),Vector2(0.12,0.10),0.34,base_phase+0.3),
+		_square_ring(half+Vector2(0.14,0.14),Vector2(0.10,0.10),1.18,base_phase+0.6),
+		_square_ring(half+Vector2(0.10,0.10),Vector2(0.08,0.08),2.02,base_phase+0.9),
+		_square_ring(half+Vector2(0.05,0.05),Vector2(0.06,0.06),2.22,base_phase+1.2,0.18)
+	])
+	_mesh_node(root,main_mesh,tint,"plaster",1.45,0.15)
+	var lobe_a:=_closed_mass([
+		_square_ring(half*Vector2(0.58,0.52),Vector2(0.08,0.08),0.28,base_phase+1.4),
+		_square_ring(half*Vector2(0.48,0.42),Vector2(0.07,0.07),1.08,base_phase+1.6),
+		_square_ring(half*Vector2(0.30,0.28),Vector2(0.05,0.05),1.84,base_phase+1.8,0.10)
+	])
+	var lobe_a_node:=_mesh_node(root,lobe_a,tint.lightened(0.05),"plaster",1.5,0.12)
+	lobe_a_node.position=Vector3(-half.x*0.26,0.0,-half.y*0.08)
+	var lobe_b:=_closed_mass([
+		_square_ring(half*Vector2(0.50,0.50),Vector2(0.08,0.07),0.22,base_phase+2.1),
+		_square_ring(half*Vector2(0.38,0.34),Vector2(0.06,0.06),0.96,base_phase+2.4),
+		_square_ring(half*Vector2(0.22,0.22),Vector2(0.05,0.05),1.68,base_phase+2.7,0.08)
+	])
+	var lobe_b_node:=_mesh_node(root,lobe_b,tint.darkened(0.07),"plaster",1.55,0.12)
+	lobe_b_node.position=Vector3(half.x*0.24,0.0,half.y*0.16)
 	for i in range(3):
-		Art.box(root,Vector3(0,c.height*(0.18+i*0.22),0.02),Vector3(c.size.x*0.92,0.07,c.size.y*0.98),tint.lightened(0.12),"plaster",0.025)
+		var ledge:=Art.box(root,Vector3(-half.x*0.28+0.26*i,1.20+0.16*i,-0.10+0.08*(i%2)),Vector3(0.58,0.08,0.26),tint.lightened(0.10),"plaster",0.05)
+		ledge.rotation.y=-0.15+0.18*i
 	for side in [-1,1]:
-		Art.ball(root,Vector3(side*(c.size.x*0.42),0.20,-0.15*side),Vector3(0.26,0.10,0.20),Color("7c8665"),"fabric")
+		Art.ball(root,Vector3(side*(half.x*0.42),0.18,-0.15*side),Vector3(0.26,0.10,0.20),Color("7c8665"),"plaster")
+
 static func _boardwalk_supports(decor: Array,r: Rect2) -> void:
 	var center:=r.get_center().y
 	# Low-profile edge rails and exposed supports, not a false elevated bridge.
@@ -175,6 +283,7 @@ static func _boardwalk_supports(decor: Array,r: Rect2) -> void:
 		for side in [-1,1]:
 			piece(decor,"box",Vector3(px,0.0275,center+side*r.size.y*0.47),Vector3(0.14,0.055,0.12),Color("7b5d40"),"wood",false)
 		piece(decor,"box",Vector3(px,0.013,center),Vector3(0.16,0.022,r.size.y*0.98),Color("916b49"),"wood",false)
+
 static func _home(a,i: int,at: Vector2) -> void:
 	var root:=Node3D.new();root.name="NatureHide_%02d"%i;root.position=Vector3(at.x,0,at.y);a.add_child(root)
 	root.set_meta("hideout_id",i)

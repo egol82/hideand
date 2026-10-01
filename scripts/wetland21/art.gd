@@ -1,6 +1,7 @@
 extends RefCounted
 ## Phase22 checkpoint: authored wetland dressing with bounded clue visuals and no gameplay collision changes.
 const Art=preload("res://scripts/phase4/art.gd")
+const RING_STEPS:=18
 static var splashes: Array=[]
 static var ripple_mesh: TorusMesh
 
@@ -41,6 +42,68 @@ static func reed_print(parent: Node3D) -> Node3D:
 		n.rotation.y=-0.45+0.35*i;no_shadow(n)
 	return root
 
+static func _material_variant(color: Color,kind: String,scale_value: float,normal_scale: float=-1.0) -> StandardMaterial3D:
+	var mat: StandardMaterial3D=Art.material(color,kind).duplicate()
+	if mat.uv1_triplanar:mat.uv1_scale=Vector3.ONE*scale_value
+	if normal_scale>=0.0 and mat.normal_enabled:mat.normal_scale=normal_scale
+	return mat
+
+static func _mesh_node(parent: Node3D,mesh: Mesh,color: Color,kind: String,scale_value: float,normal_scale: float=-1.0) -> MeshInstance3D:
+	var node:=MeshInstance3D.new();node.mesh=mesh;node.material_override=_material_variant(color,kind,scale_value,normal_scale);parent.add_child(node)
+	return node
+
+static func _push_tri(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,uv_scale: float=0.12) -> void:
+	var normal: Vector3=(b-a).cross(c-a)
+	if normal.length_squared()<0.000001:return
+	normal=normal.normalized()
+	st.set_normal(normal);st.set_uv(Vector2(a.x,a.z)*uv_scale);st.add_vertex(a)
+	st.set_normal(normal);st.set_uv(Vector2(b.x,b.z)*uv_scale);st.add_vertex(b)
+	st.set_normal(normal);st.set_uv(Vector2(c.x,c.z)*uv_scale);st.add_vertex(c)
+
+static func _square_ring(half: Vector2,margin: Vector2,base_y: float,phase: float,relief: float=0.0) -> Array:
+	var ring: Array=[]
+	for i in range(RING_STEPS):
+		var angle:=TAU*float(i)/float(RING_STEPS)
+		var direction:=Vector2(cos(angle),sin(angle))
+		var denom:=maxf(absf(direction.x),absf(direction.y))
+		var square:=direction/denom
+		var expand_x:=margin.x*(0.80+0.14*sin(angle*3.0+phase)+0.06*cos(angle*5.0-phase*0.4))
+		var expand_z:=margin.y*(0.76+0.14*cos(angle*2.0+phase)+0.08*sin(angle*4.0-phase*0.5))
+		expand_x=maxf(expand_x,margin.x*0.38)
+		expand_z=maxf(expand_z,margin.y*0.38)
+		var py:=base_y+relief*(0.5+0.25*sin(angle*2.0+phase)+0.25*cos(angle*3.0-phase*0.6))
+		ring.append(Vector3(square.x*(half.x+expand_x),py,square.y*(half.y+expand_z)))
+	return ring
+
+static func _cap_center(ring: Array,flip: bool=false) -> Vector3:
+	var center:=Vector3.ZERO
+	for p in ring:center+=p
+	center/=max(1,ring.size())
+	if flip:center.y-=0.001
+	return center
+
+static func _closed_mass(rings: Array) -> ArrayMesh:
+	var st:=SurfaceTool.new();st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var count: int=rings[0].size()
+	for layer in range(rings.size()-1):
+		var lower: Array=rings[layer]
+		var upper: Array=rings[layer+1]
+		for i in range(count):
+			var j:=int((i+1)%count)
+			_push_tri(st,lower[i],lower[j],upper[j])
+			_push_tri(st,lower[i],upper[j],upper[i])
+	var bottom: Array=rings[0]
+	var bottom_center: Vector3=_cap_center(bottom,true)
+	for i in range(count):
+		var j:=int((i+1)%count)
+		_push_tri(st,bottom_center,bottom[j],bottom[i])
+	var top: Array=rings[rings.size()-1]
+	var top_center: Vector3=_cap_center(top)
+	for i in range(count):
+		var j:=int((i+1)%count)
+		_push_tri(st,top_center,top[i],top[j])
+	return st.commit()
+
 static func _reed_stem(parent: Node3D,pos: Vector3,height: float,yaw: float,pitch: float,thickness: float,color: Color,leaf_color: Color,has_head: bool) -> void:
 	var mesh:=CylinderMesh.new();mesh.top_radius=thickness*0.45;mesh.bottom_radius=thickness;mesh.height=height;mesh.radial_segments=8
 	var stem:=MeshInstance3D.new();stem.mesh=mesh;stem.material_override=Art.material(color,"wood")
@@ -64,37 +127,45 @@ static func _reed_cluster(parent: Node3D,rng: RandomNumberGenerator,extent: Vect
 
 static func _water_patch(parent: Node3D,r: Rect2,index: int) -> void:
 	var root:=Node3D.new();root.name="WaterArea%02d"%index;root.position=Vector3(r.get_center().x,0,r.get_center().y);parent.add_child(root)
-	var size:=r.size
-	var mud:=Art.box(root,Vector3(0,0.01,0),Vector3(size.x+0.85,0.04,size.y+0.9),Color("6c7d53"),"fabric",0.25)
-	mud.material_override=Art.material(Color("7a8861"),"fabric")
-	var damp:=Art.box(root,Vector3(0,0.028,0),Vector3(size.x+0.35,0.025,size.y+0.42),Color("89956e"),"fabric",0.22)
-	damp.material_override=Art.material(Color("8d9a70"),"fabric")
-	var water:=Art.box(root,Vector3(0,0.04,0),Vector3(size.x-0.28,0.018,size.y-0.16),Color("6ba9ad"),"ceramic",0.18);no_shadow(water)
-	for side in [-1,1]:
-		for step in range(7):
-			var t:=float(step)/6.0
-			var pos:=Vector3(lerpf(-size.x*0.42,size.x*0.42,t),0.05,side*(size.y*0.5-0.03+0.06*sin(2.4*t+index)))
-			var bank:=Art.ball(root,pos,Vector3(0.30,0.06,0.18),Color("74835e"),"fabric")
-			if step%2==0:no_shadow(bank)
-	for side in [-1,1]:
-		for step in range(5):
-			var t:=float(step)/4.0
-			var pos:=Vector3(side*(size.x*0.5-0.03+0.05*cos(2.7*t+index)),0.05,lerpf(-size.y*0.32,size.y*0.32,t))
-			var edge:=Art.ball(root,pos,Vector3(0.18,0.05,0.24),Color("70815d"),"fabric")
-			no_shadow(edge)
+	var half:=r.size*0.5
+	var shore:=_closed_mass([
+		_square_ring(half+Vector2(0.28,0.20),Vector2(0.10,0.08),0.00,0.45+index*0.37),
+		_square_ring(half+Vector2(0.18,0.14),Vector2(0.08,0.06),0.028,0.65+index*0.37),
+		_square_ring(half+Vector2(0.10,0.08),Vector2(0.06,0.05),0.060,0.95+index*0.37,0.010)
+	])
+	_mesh_node(root,shore,Color("76855f"),"plaster",1.45,0.12)
+	var damp:=_closed_mass([
+		_square_ring(half+Vector2(0.18,0.12),Vector2(0.10,0.08),0.016,1.15+index*0.27),
+		_square_ring(half+Vector2(0.10,0.08),Vector2(0.08,0.06),0.042,1.35+index*0.27,0.006)
+	])
+	var damp_node:=_mesh_node(root,damp,Color("88956d"),"plaster",1.65,0.10)
+	damp_node.position.y=0.001
+	var water:=_closed_mass([
+		_square_ring(Vector2(maxf(half.x-0.18,0.22),maxf(half.y-0.10,0.18)),Vector2(0.10,0.08),0.028,1.8+index*0.31),
+		_square_ring(Vector2(maxf(half.x-0.26,0.18),maxf(half.y-0.14,0.15)),Vector2(0.08,0.06),0.046,2.05+index*0.31,0.006)
+	])
+	var water_node:=_mesh_node(root,water,Color("6ba6ab"),"ceramic",1.0)
+	no_shadow(water_node)
 	var rng:=RandomNumberGenerator.new();rng.seed=4400+index
-	for i in range(8):
-		var pos:=Vector3(rng.randf_range(-size.x*0.42,size.x*0.42),0.055,rng.randf_range(-size.y*0.26,size.y*0.26))
-		var lily:=Art.ball(root,pos,Vector3(0.11,0.012,0.13),Color("9dbf7b"),"foam")
+	for i in range(6):
+		var pos:=Vector3(rng.randf_range(-half.x*0.38,half.x*0.38),0.053,rng.randf_range(-half.y*0.22,half.y*0.22))
+		var lily:=Art.ball(root,pos,Vector3(0.13,0.012,0.15),Color("9ebf7d"),"foam")
 		lily.rotation.y=rng.randf()*TAU;no_shadow(lily)
 	for side in [-1,1]:
-		var clump:=Node3D.new();clump.position=Vector3(side*(size.x*0.5+0.08),0,lerpf(-size.y*0.18,size.y*0.18,0.35+0.3*side));root.add_child(clump)
-		_reed_cluster(clump,rng,Vector2(0.18,0.16),4,0.58,0.0)
+		var clump:=Node3D.new();clump.position=Vector3(side*(half.x+0.22),0.02,(-0.18 if side<0 else 0.14)*half.y);root.add_child(clump)
+		_reed_cluster(clump,rng,Vector2(0.20,0.16),4,0.58,0.0)
+		for j in range(2):
+			var grass:=Art.ball(clump,Vector3(0.10*(-1 if j==0 else 1),0.10,0.16*j-0.08),Vector3(0.16,0.08,0.12),Color("95b56d"),"foam")
+			grass.rotation.y=rng.randf()*TAU
 
 static func _reactive_tuft(parent: Node3D,index: int) -> void:
 	var rng:=RandomNumberGenerator.new();rng.seed=7800+index
-	Art.box(parent,Vector3(0,0.05,0),Vector3(0.78,0.08,0.72),Color("73835f"),"fabric",0.14)
-	Art.box(parent,Vector3(0,0.08,0),Vector3(0.54,0.05,0.46),Color("84906b"),"fabric",0.10)
+	var mound:=_closed_mass([
+		_square_ring(Vector2(0.38,0.34),Vector2(0.10,0.10),0.00,0.4+index),
+		_square_ring(Vector2(0.26,0.24),Vector2(0.08,0.08),0.08,0.7+index),
+		_square_ring(Vector2(0.14,0.12),Vector2(0.06,0.05),0.16,1.1+index,0.04)
+	])
+	_mesh_node(parent,mound,Color("76845f"),"plaster",1.5,0.12)
 	for i in range(4):
 		var rootlog:=Art.box(parent,Vector3(-0.18+0.12*i,0.10,-0.12+0.06*(i%2)),Vector3(0.24,0.08,0.10),Color("8c6b49"),"wood",0.035)
 		rootlog.rotation.y=-0.45+0.28*i

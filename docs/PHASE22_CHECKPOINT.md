@@ -1,71 +1,75 @@
-# Phase22 checkpoint v2 — targeted geometry and capture corrections
+# Phase22 checkpoint v5 — sculpted wetland cover and shoreline replacement
 
-This is a minimal correction of the preserved first Reedwater Bend checkpoint,
-not a new art pass. No GitHub operation or local Godot process was run for v2.
+This v5 source starts from the clean CI-passing v2 checkpoint and replaces only
+Reedwater Bend art code and this note. No GitHub push or Godot process was run
+in this WEB turn; runtime and pixels remain unverified here.
 
-## Immutable inputs
+## Preserved baseline
 
-- Phase21 base: `8737d6e2009f28990e554ffa6c81c5650237afb5`
-- Phase21 tree: `8239be06e4a85f47987fdf06e6f10c30769725b2`
-- Preserved v1 source SHA256: `e7e6500ecf0b55f92dec2db200190fa6ac6e8eaf43345cef394737370108fbdb`
-- Preserved v1 patch SHA256: `a393684b3dfffa55aad6e757952af53b574f051bf2a24c0aed1d71638cf7866c`
+- Phase21 base commit: `8737d6e2009f28990e554ffa6c81c5650237afb5`
+- Published v2 Phase22 tree: `bc60b2d99330513bef78b6423fbcaae040edbaa9`
+- Local v2 source ZIP SHA256 used as input:
+  `fd5693ace3dfe152c75203d8ee5a8c3c2f10ab1f7ba0e23d00cd2de14bdb8716`
 
-## Targeted corrections
+## Scope of v5 changes
 
-1. Reed and rock cores now contain the complete original collision box. The
-   existing rounded-mesh helper receives the collider dimensions plus 0.12m on
-   each axis and a 0.06m bevel, leaving its inner box equal to the collider.
-   For 2m cover the continuous opaque core reaches 2.06m, including the former
-   upper-corner gaps. Existing crown pieces are raised to retain the stepped
-   mud/stone profile. Reed feet around 1.88m overlap this solid soil.
-   Collision shapes, layers, masks, navigation rectangles and hide ports are
-   unchanged; this is not a reduction of the 2m collider.
-2. Reedwater boardwalk backing is lowered to a 0.002m top. Planks are 0.04m
-   thick while retaining the old 0.0425m deck top. Exposed side rails, posts
-   (0 to 0.055m) and cross-beams (0.002 to 0.024m) replace buried supports.
-   Structural pieces are not culled as small grass. This remains a shallow
-   cosmetic walkway over the original flat floor, not an elevated bridge.
-3. The comparison fixture reuses Wetland21's map/menu render-flush ordering
-   before starting a match and waits for real PhysicsServer placement. It
-   restores `camera.transform = Transform3D.IDENTITY` before gameplay follow,
-   checks the actual player eye and all four clear actor positions, and keeps
-   other actors out of solid islands. Close/mid camera poses are unchanged.
-4. Both CI comparison launches require `--quality-test --match-seed=8027`
-   before game `_ready`. Each fixture starts round index 0 with that same seed.
-   The original placement/occupancy validator must finish successfully.
-   Each saved PNG logs the actual layout descriptor and camera/actor transforms.
-   JSON manifests are compared recursively: exact discrete/layout values and
-   at most 0.00001 numeric tolerance for floating transforms. Gameplay eye must
-   be `(5.9, 1.48, -2.5)` with zero local camera translation.
+Modified files only:
 
-## Preserved scope
+- `scripts/outdoor20/builder.gd`
+- `scripts/wetland21/art.gd`
+- `docs/PHASE22_CHECKPOINT.md`
 
-Only `builder.gd`, the comparison capture, its workflow and this document are
-changed from v1. `scripts/wetland21/art.gd` and `scripts/outdoor20/studio.gd`
-are byte-identical to v1. The six-file cumulative change set versus Phase21
-still contains three added files, three modified files and no deletions.
+No other gameplay scripts, tests, workflows, weapons, hand proportions, seed/
+round logic, collisions, navigation rectangles, ports, spawns or clue timings
+were intentionally changed.
 
-All pre-existing tests and game/seed/clue implementations remain unchanged.
-No weapon, hand, drawing proportion, collision, RNG algorithm, timer or
-occupancy predicate is replaced. The fixture seed reset is test-only.
-Existing wetland expiry/reed pixel-difference thresholds are unchanged.
-Before/after art pixels are expected to differ; comparison-condition equality
-is enforced independently and does not claim visual quality.
+## Art changes
 
-## Execution and evidence status
+### 1) Reed islands / rock cover in `builder.gd`
 
-V2 has only Python file, diff, checksum and source-level validation in WEB.
-Godot compilation, runtime collision behavior, captures and visual quality
-remain UNVERIFIED for this v2. Earlier independent 4.6.3 findings describe v1,
-not a successful v2 run.
+- Replaced the large visible boxy reed and rock masses with SurfaceTool-built
+  closed meshes composed of multiple horizontal rings plus top and bottom caps.
+- The contour generation is based on a square/super-rectangular footprint,
+  not an ellipse, so the generated opaque shell encloses the original box
+  collider footprint instead of shrinking away from the corners.
+- The collider itself is unchanged and is still created by the original
+  `Toy.collider(...)` path.
+- Added irregular low water skirts, shoreline mud and moss cap shaping to the
+  reed islands while keeping them purely visual.
+- Rock cover now uses a guaranteed enclosing main closed mass and overlapping
+  secondary lobes for visible ridges/surfaces.
+- Large cover materials now use tuned `plaster`/`ceramic`/`foam` variants so
+  the prior dominant `fabric` tiling does not drive the whole mound face.
 
-The existing Windows/Linux 4.4.1 and 4.7.2 CI jobs and regression commands are
-retained. On a future approved push, Linux 4.4.1 additionally captures the real
-Phase21 scene at the pinned base and current HEAD with the same fixture.
-CI will retain `before_*.png`, `after_*.png`, both JSON manifests, strict engine
-logs, a conditions log, exact HEAD/tree, source ZIP, full-index patch and bundle.
-These are planned CI outputs, not artifacts claimed to exist in this turn.
+### 2) Wetland shoreline in `wetland21/art.gd`
 
-The recovered v1 ZIP/patch are kept intact. The v2 cumulative patch is based on
-Phase21 and includes all three new files; a separate v1-to-v2 incremental patch
-records only these four targeted corrections.
+- Replaced the previous box-and-row shoreline treatment with low-profile,
+  irregular closed meshes for shore, damp margin and water surface.
+- Surface zones, clue/service logic, audio, `wet_print`, `reed_print`, tuft
+  bending and all no-physics constraints are preserved.
+- Water visuals remain shallow and non-blocking; no hidden walls or collision
+  objects are introduced.
+
+## Source-level validation performed in this WEB turn
+
+Python-only validation was run on the final bytes after writing the files:
+
+- duplicate top-level function names: checked
+- nested named function definitions: checked absent
+- mesh generator sample validation (mirrored in Python):
+  - triangles are non-degenerate
+  - every undirected edge in closed sample meshes is paired exactly twice
+  - reed and rock sample meshes span from ground `y=0` to above collider top
+  - square-footprint coverage was checked at the original collider corners
+  - shoreline meshes remain low-profile
+- final ZIP / patch / file-hash manifests were regenerated from the written
+  final bytes
+
+## Important limits of this turn
+
+- Godot parser validation: **NOT run here**
+- Godot scene runtime / actual rendering: **NOT run here**
+- CI / screenshot comparison: **NOT run here**
+
+The next approved step is external publication of these exact bytes followed by
+real engine execution and image review.
